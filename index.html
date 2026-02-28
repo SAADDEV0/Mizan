@@ -7653,40 +7653,76 @@
       });
     }
 
+    function isMobile() {
+      return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    }
+
     async function gdriveConnect() {
       const clientId = (DB.cfg.gdriveClientId || '').trim();
       if (!clientId) { toast('⚠ Enter your Google Client ID first'); return; }
       toast('Opening Google sign-in…');
       try {
         await loadGoogleScript();
-        gdriveTokenClient = google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: 'https://www.googleapis.com/auth/drive.file',
-          // Pre-fill account if we've connected before
-          ...(DB.cfg.gdriveLoginHint ? { hint: DB.cfg.gdriveLoginHint } : {}),
-          callback: async (response) => {
-            if (response.error) { toast('⚠ Google auth failed: ' + response.error); return; }
-            gdriveToken = response.access_token;
-            DB.cfg.gdriveConnected = true;
-            // Save login_hint so we can skip account picker on future visits
-            if (response.hint) DB.cfg.gdriveLoginHint = response.hint;
-            toast('☁ Connected! Setting up "mizan storage" folder…');
-            try {
-              await gdriveEnsureFolder();
-              autoSave();
-              updateDriveUI();
-              setSaveStatus('unsaved');
-              toast('☁ Google Drive ready — syncing…');
-            } catch (e) {
-              toast('⚠ Folder setup failed: ' + e.message);
+        if (isMobile()) {
+          // Mobile: full-page redirect flow (avoids popup blocker)
+          await idbSet('mizan_predrive', JSON.stringify(dbSnapshot()));
+          const redirectUri = location.href.split('#')[0].split('?')[0];
+          const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'token',
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            include_granted_scopes: 'true',
+          });
+          if (DB.cfg.gdriveLoginHint) params.set('login_hint', DB.cfg.gdriveLoginHint);
+          location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+        } else {
+          // Desktop: popup flow
+          gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            ...(DB.cfg.gdriveLoginHint ? { hint: DB.cfg.gdriveLoginHint } : {}),
+            callback: async (response) => {
+              if (response.error) { toast('⚠ Google auth failed: ' + response.error); return; }
+              gdriveToken = response.access_token;
+              await onDriveTokenReceived(clientId, response.hint);
             }
-          }
-        });
-        // If we have a hint, try silent first; otherwise show account picker
-        gdriveTokenClient.requestAccessToken(DB.cfg.gdriveLoginHint ? { prompt: '' } : {});
+          });
+          gdriveTokenClient.requestAccessToken(DB.cfg.gdriveLoginHint ? { prompt: '' } : {});
+        }
       } catch (e) {
         toast('⚠ ' + e.message);
       }
+    }
+
+    async function onDriveTokenReceived(clientId, hint) {
+      DB.cfg.gdriveConnected = true;
+      if (clientId) DB.cfg.gdriveClientId = clientId;
+      if (hint) DB.cfg.gdriveLoginHint = hint;
+      toast('☁ Connected! Setting up folder…');
+      try {
+        await gdriveEnsureFolder();
+        autoSave();
+        updateDriveUI();
+        setSaveStatus('unsaved');
+        toast('☁ Google Drive ready — syncing…');
+      } catch (e) {
+        toast('⚠ Folder setup failed: ' + e.message);
+      }
+    }
+
+    // Handle OAuth redirect return (mobile) — token in URL hash
+    async function handleOAuthRedirect() {
+      if (!location.hash) return false;
+      const params = new URLSearchParams(location.hash.slice(1));
+      const token = params.get('access_token');
+      if (!token) return false;
+      history.replaceState(null, '', location.pathname + location.search);
+      gdriveToken = token;
+      const pre = await idbGet('mizan_predrive');
+      if (pre) { try { mergeDB(JSON.parse(pre)); } catch(e) {} }
+      await onDriveTokenReceived(DB.cfg.gdriveClientId, null);
+      return true;
     }
 
     // Find or create the "mizan storage" folder in Drive root, return its ID
@@ -7801,12 +7837,16 @@
           gdriveFolderId = null;
           updateDriveUI();
           if (dot) dot.className = 'gdrive-dot';
-          // Try to silently re-acquire a token if we have a token client
-          if (gdriveTokenClient) {
+          if (isMobile()) {
+            // Mobile: need to re-do full redirect flow
+            toast('☁ Session expired — reconnecting…');
+            setTimeout(() => gdriveConnect(), 1200);
+          } else if (gdriveTokenClient) {
             toast('☁ Refreshing Google session…');
             gdriveTokenClient.requestAccessToken({ prompt: '' });
           } else {
             setSaveStatus('nosave');
+            toast('⚠ Session expired — reconnect Drive in Settings');
           }
           return { ok: false, error: 'token_expired' };
         }
@@ -8895,7 +8935,7 @@
        BOOT
     ═══════════════════════════════════════ */
     async function boot() {
-      // Load from IndexedDB browser cache first (works across same browser sessions)
+      // Load from IndexedDB browser cache first
       await loadFromCache();
       applyTheme();
       renderVerse();
@@ -8904,11 +8944,16 @@
       render();
       setSaveStatus('nosave');
       updateDriveUI();
-      // Auto-reconnect to Google Drive if previously connected
-      if (DB.cfg.gdriveConnected && DB.cfg.gdriveClientId) {
+
+      // Check if we just returned from a mobile OAuth redirect
+      const wasRedirect = await handleOAuthRedirect();
+      if (wasRedirect) return; // onDriveTokenReceived handles the rest
+
+      // Auto-reconnect silently if previously connected (desktop token refresh)
+      if (DB.cfg.gdriveConnected && DB.cfg.gdriveClientId && !isMobile()) {
         try {
           await loadGoogleScript();
-          const tokenClientConfig = {
+          const cfg = {
             client_id: DB.cfg.gdriveClientId,
             scope: 'https://www.googleapis.com/auth/drive.file',
             callback: async (response) => {
@@ -8916,17 +8961,16 @@
               gdriveToken = response.access_token;
               if (response.hint) DB.cfg.gdriveLoginHint = response.hint;
               updateDriveUI();
-              // Silently pull latest data from Drive
               try {
                 await gdriveEnsureFolder();
                 const fileId = await gdriveFindFile();
                 if (fileId) {
-                  const fileRes = await fetch(
+                  const res = await fetch(
                     `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
                     { headers: { Authorization: 'Bearer ' + gdriveToken } }
                   );
-                  if (fileRes.ok) {
-                    const data = await fileRes.json();
+                  if (res.ok) {
+                    const data = await res.json();
                     mergeDB(data);
                     idbSet('mizan_cache', JSON.stringify(data));
                     render();
@@ -8937,19 +8981,13 @@
                   }
                 } else {
                   setSaveStatus('unsaved');
-                  toast('☁ Drive connected — no backup yet');
                 }
-              } catch(e) {
-                setSaveStatus('nosave');
-              }
+              } catch(e) { setSaveStatus('nosave'); }
             }
           };
-          // Pass login_hint so Google skips the account picker silently
-          if (DB.cfg.gdriveLoginHint) {
-            tokenClientConfig.hint = DB.cfg.gdriveLoginHint;
-          }
-          gdriveTokenClient = google.accounts.oauth2.initTokenClient(tokenClientConfig);
-          gdriveTokenClient.requestAccessToken({ prompt: '' }); // silent token refresh
+          if (DB.cfg.gdriveLoginHint) cfg.hint = DB.cfg.gdriveLoginHint;
+          gdriveTokenClient = google.accounts.oauth2.initTokenClient(cfg);
+          gdriveTokenClient.requestAccessToken({ prompt: '' });
         } catch(e) {}
       }
     }
