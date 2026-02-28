@@ -3967,6 +3967,7 @@
         width: 100%;
         right: -100%;
         border-radius: 0;
+        padding-bottom: calc(52px + env(safe-area-inset-bottom));
       }
 
       .cfg-drawer.open {
@@ -7657,12 +7658,15 @@
         await loadGoogleScript();
         gdriveTokenClient = google.accounts.oauth2.initTokenClient({
           client_id: clientId,
-          // drive.file = can create/read/edit files this app created, VISIBLE in Drive UI
           scope: 'https://www.googleapis.com/auth/drive.file',
+          // Pre-fill account if we've connected before
+          ...(DB.cfg.gdriveLoginHint ? { hint: DB.cfg.gdriveLoginHint } : {}),
           callback: async (response) => {
             if (response.error) { toast('⚠ Google auth failed: ' + response.error); return; }
             gdriveToken = response.access_token;
             DB.cfg.gdriveConnected = true;
+            // Save login_hint so we can skip account picker on future visits
+            if (response.hint) DB.cfg.gdriveLoginHint = response.hint;
             toast('☁ Connected! Setting up "mizan storage" folder…');
             try {
               await gdriveEnsureFolder();
@@ -7675,7 +7679,8 @@
             }
           }
         });
-        gdriveTokenClient.requestAccessToken();
+        // If we have a hint, try silent first; otherwise show account picker
+        gdriveTokenClient.requestAccessToken(DB.cfg.gdriveLoginHint ? { prompt: '' } : {});
       } catch (e) {
         toast('⚠ ' + e.message);
       }
@@ -7786,14 +7791,21 @@
           body
         });
 
-        // Handle expired token
+        // Handle expired token — silently refresh
         if (res.status === 401) {
           gdriveToken = null;
           gdriveFileId = null;
           gdriveFolderId = null;
           updateDriveUI();
           if (dot) dot.className = 'gdrive-dot';
-          return { ok: false, error: 'Session expired — please reconnect Drive in Settings' };
+          // Try to silently re-acquire a token if we have a token client
+          if (gdriveTokenClient) {
+            toast('☁ Refreshing Google session…');
+            gdriveTokenClient.requestAccessToken({ prompt: '' });
+          } else {
+            setSaveStatus('nosave');
+          }
+          return { ok: false, error: 'token_expired' };
         }
 
         const result = await res.json();
@@ -8893,12 +8905,13 @@
       if (DB.cfg.gdriveConnected && DB.cfg.gdriveClientId) {
         try {
           await loadGoogleScript();
-          gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+          const tokenClientConfig = {
             client_id: DB.cfg.gdriveClientId,
             scope: 'https://www.googleapis.com/auth/drive.file',
             callback: async (response) => {
               if (response.error) return;
               gdriveToken = response.access_token;
+              if (response.hint) DB.cfg.gdriveLoginHint = response.hint;
               updateDriveUI();
               // Silently pull latest data from Drive
               try {
@@ -8927,7 +8940,12 @@
                 setSaveStatus('nosave');
               }
             }
-          });
+          };
+          // Pass login_hint so Google skips the account picker silently
+          if (DB.cfg.gdriveLoginHint) {
+            tokenClientConfig.hint = DB.cfg.gdriveLoginHint;
+          }
+          gdriveTokenClient = google.accounts.oauth2.initTokenClient(tokenClientConfig);
           gdriveTokenClient.requestAccessToken({ prompt: '' }); // silent token refresh
         } catch(e) {}
       }
