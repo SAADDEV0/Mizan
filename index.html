@@ -3171,9 +3171,31 @@
       flex-shrink: 0;
     }
 
-    .mob-day-arr:last-child {
+    .mob-day-arr:last-of-type {
       border-right: none !important;
       border-left: 1px solid var(--brd) !important;
+    }
+
+    .mob-settings-btn {
+      width: 52px;
+      height: 52px;
+      border: none;
+      border-left: 1px solid var(--brd);
+      background: none;
+      color: var(--t4);
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      transition: color var(--ease), background var(--ease);
+    }
+
+    .mob-settings-btn:active {
+      background: var(--em-bg);
+      color: var(--em3);
     }
 
     .mob-day-mid {
@@ -5395,6 +5417,7 @@
       <div class="day-full" id="mob-day-full"></div>
     </div>
     <button class="day-arr mob-day-arr" onclick="shiftDay(1)">›</button>
+    <button class="mob-settings-btn" onclick="toggleCfg()" aria-label="Settings">⚙</button>
   </div>
 
   <!-- Day Picker Modal -->
@@ -5455,9 +5478,8 @@
       <div class="sb-save">
         <div class="save-row">
           <div class="save-dot" id="save-dot"></div>
-          <span class="save-label" id="save-label">No folder selected</span>
+          <span class="save-label" id="save-label">Not synced</span>
           <span class="save-cloud-ic" id="save-cloud-ic" title="Google Drive">☁</span>
-          <button class="save-btn" id="save-btn" onclick="manualSave()" disabled>Save</button>
         </div>
       </div>
 
@@ -5513,11 +5535,7 @@
         <div class="verse-source" id="verse-source"></div>
       </div>
 
-      <div class="no-folder-banner" id="nfb">
-        <span class="nfb-text">💾 <strong>No save folder.</strong> Data is only in browser memory. Settings → Pick
-          Folder to persist.</span>
-        <button class="btn xs brass-btn" onclick="pickFolder()">Pick Folder</button>
-      </div>
+
 
       <div class="topbar">
         <div class="tb-left">
@@ -6071,14 +6089,6 @@
           <span class="theme-btn-lbl">Sepia</span>
         </button>
       </div>
-      <div class="cfg-section">Save Folder</div>
-      <div class="folder-info" id="folder-info">
-        <span class="folder-icon">📁</span>
-        <span class="folder-path" id="folder-path">No folder selected</span>
-      </div>
-      <button class="btn brass-btn" style="width:100%;justify-content:center" onclick="pickFolder()">📁 Pick Save
-        Folder</button>
-      <button class="btn" style="width:100%;justify-content:center" onclick="manualSave()">💾 Save Now</button>
       <div class="cfg-section">Pomodoro Timer</div>
       <div class="cfg-row"><span class="cfg-lbl">Work Duration</span>
         <div class="counter-row"><button class="c-btn" onclick="adjCfg('workMin',-5)">−</button><span class="c-val"
@@ -6514,8 +6524,7 @@
     };
 
     const DEFAULTS = { workMin: 25, shortBreak: 5, longBreak: 20, sessionsBeforeLong: 4, theme: 'dark' };
-    const LS_KEY = 'mizan_v4';
-    const FILE_NAME = 'mizan-data.json';
+    const LS_KEY = 'mizan_v4'; // kept for legacy — not actively used
     const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const WDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -6526,28 +6535,12 @@
     let dayOff = 0, activePg = 'dash', calY = new Date().getFullYear(), calM = new Date().getMonth();
     let activeCat = 'all', jEdit = null, tEdit = null, tSess = 1, tCol = TASK_COLS[0];
     let hEdit = null, hEmoji = HABIT_EMS[0], hCol = HABIT_COLS[0];
-    let timer = null, toastTmr = null, dirHandle = null, saveStatus = 'nosave', edImages = [];
-    let localUnsaved = false;   // true when DB changed but not written to local file
-    let driveUnsaved = false;   // true when DB changed but not pushed to Drive
+    let timer = null, toastTmr = null, saveStatus = 'nosave', edImages = [];
+    let driveUnsaved = false;
 
     function updateUnsavedState() {
-      // Update browser tab title to show unsaved indicator
-      const hasAny = localUnsaved || driveUnsaved;
-      document.title = hasAny ? '● Mizan — ميزان' : 'Mizan — ميزان';
+      document.title = driveUnsaved ? '● Mizan — ميزان' : 'Mizan — ميزان';
     }
-
-    // Intercept tab close / navigation
-    window.addEventListener('beforeunload', (e) => {
-      if (localUnsaved || driveUnsaved) {
-        const parts = [];
-        if (localUnsaved) parts.push('local folder');
-        if (driveUnsaved && gdriveToken) parts.push('Google Drive');
-        const msg = `You have unsaved changes in: ${parts.join(' & ')}. Leave without saving?`;
-        e.preventDefault();
-        e.returnValue = msg;
-        return msg;
-      }
-    });
 
     /* ═══════════════════════════════════════
        MOBILE NAV
@@ -6564,13 +6557,12 @@
     }
 
     /* ═══════════════════════════════════════
-       STORAGE
+       STORAGE — IndexedDB cache + Google Drive only
     ═══════════════════════════════════════ */
-    function toLS() { try { localStorage.setItem(LS_KEY, JSON.stringify(DB)); } catch (e) { } }
-    function fromLS() {
-      try { const raw = localStorage.getItem(LS_KEY); if (!raw) return false; mergeDB(JSON.parse(raw)); return true; }
-      catch (e) { return false; }
+    function dbSnapshot() {
+      return { version: 2, lastSaved: new Date().toISOString(), cfg: DB.cfg, tasks: DB.tasks, habits: DB.habits, journal: DB.journal, goals: DB.goals, gym: DB.gym };
     }
+
     function mergeDB(d) {
       if (d.tasks && typeof d.tasks === 'object' && !Array.isArray(d.tasks)) DB.tasks = d.tasks;
       if (Array.isArray(d.habits)) DB.habits = d.habits;
@@ -6585,130 +6577,61 @@
       DB.journal.forEach(j => { if (!Array.isArray(j.images)) j.images = []; if (!Array.isArray(j.tags)) j.tags = []; });
     }
 
-    /* File System Access */
-    async function restoreHandle() {
-      try {
-        const h = await idbGet('dirHandle');
-        if (h) {
-          const perm = await h.queryPermission({ mode: 'readwrite' });
-          if (perm === 'granted') { dirHandle = h; setSaveStatus('saved', h.name); await loadFromFile(); return; }
-        }
-      } catch (e) { }
-      setSaveStatus('nosave', null);
-    }
-    async function pickFolder() {
-      if (!window.showDirectoryPicker) { toast('Use Chrome/Edge for file saving.'); return; }
-      try {
-        const root = await window.showDirectoryPicker({ mode: 'readwrite' });
-        // Auto-navigate into "mizan storage" subfolder — create it if it doesn't exist
-        let h;
-        try {
-          h = await root.getDirectoryHandle('mizan storage', { create: true });
-        } catch (e) {
-          // Fallback to root if subfolder creation fails
-          h = root;
-          toast('⚠ Could not create "mizan storage" subfolder — saving in root folder');
-        }
-        dirHandle = h;
-        await idbSet('dirHandle', h);
-        setSaveStatus('saved', h.name);
-        await saveToFile();
-        document.getElementById('nfb').classList.remove('show');
-        document.getElementById('save-btn').disabled = false;
-        toast('📁 Saving in "mizan storage" folder ✓');
-      } catch (e) { if (e.name !== 'AbortError') toast('Could not access folder: ' + e.message); }
-    }
-    async function saveToFile() {
-      const jsonStr = JSON.stringify({ version: 2, lastSaved: new Date().toISOString(), cfg: DB.cfg, tasks: DB.tasks, habits: DB.habits, journal: DB.journal, goals: DB.goals, gym: DB.gym }, null, 2);
-      let localOk = false;
-      if (!dirHandle) {
-        toLS();
-        setSaveStatus('unsaved', null);
-      } else {
-        try {
-          const fh = await dirHandle.getFileHandle(FILE_NAME, { create: true });
-          const w = await fh.createWritable();
-          await w.write(jsonStr);
-          await w.close();
-          toLS();
-          setSaveStatus('saved', dirHandle.name);
-          localUnsaved = false;
-          localOk = true;
-        } catch (e) {
-          setSaveStatus('error', null);
-          toast('⚠ Save failed: ' + e.message);
-        }
-      }
-      // Also sync to Google Drive if connected
-      if (gdriveToken) {
-        gdriveUpload(jsonStr).then(result => {
-          if (result.ok) {
-            driveUnsaved = false;
-          }
-          updateUnsavedState();
-        });
-      }
-      updateUnsavedState();
-      return localOk;
-    }
-    async function loadFromFile() {
-      if (!dirHandle) return;
-      try { const fh = await dirHandle.getFileHandle(FILE_NAME); const file = await fh.getFile(); mergeDB(JSON.parse(await file.text())); toLS(); return true; }
-      catch (e) { return false; }
-    }
-    async function manualSave() {
-      if (!dirHandle && !window.showDirectoryPicker) { toast('Export JSON from Settings.'); return; }
-      if (!dirHandle) { await pickFolder(); return; }
-      const ok = await saveToFile(); if (ok) toast('💾 Saved to ' + FILE_NAME);
-    }
-    function autoSave() {
-      toLS();
-      // Also write to IndexedDB as browser cache fallback
-      idbSet('mizan_cache', JSON.stringify({ version: 2, lastSaved: new Date().toISOString(), cfg: DB.cfg, tasks: DB.tasks, habits: DB.habits, journal: DB.journal, goals: DB.goals, gym: DB.gym }));
-      localUnsaved = true;
-      if (gdriveToken) driveUnsaved = true;
-      if (dirHandle) setSaveStatus('unsaved', dirHandle.name);
-      updateUnsavedState();
-    }
-
-    // Auto-persist to Google Drive every 10 seconds if there are unsaved changes
-    setInterval(async () => {
-      if ((localUnsaved || driveUnsaved) && (dirHandle || gdriveToken)) {
-        const jsonStr = JSON.stringify({ version: 2, lastSaved: new Date().toISOString(), cfg: DB.cfg, tasks: DB.tasks, habits: DB.habits, journal: DB.journal, goals: DB.goals, gym: DB.gym }, null, 2);
-        if (dirHandle) {
-          try {
-            const fh = await dirHandle.getFileHandle(FILE_NAME, { create: true });
-            const w = await fh.createWritable();
-            await w.write(jsonStr);
-            await w.close();
-            toLS();
-            setSaveStatus('saved', dirHandle.name);
-            localUnsaved = false;
-          } catch(e) {}
-        }
-        if (gdriveToken && driveUnsaved) {
-          gdriveUpload(jsonStr).then(r => { if (r.ok) { driveUnsaved = false; updateUnsavedState(); } });
-        }
-        updateUnsavedState();
-      }
-    }, 10000);
-    function setSaveStatus(status, folderName) {
-      saveStatus = status;
-      const dot = document.getElementById('save-dot');
-      const lbl = document.getElementById('save-label');
-      const btn = document.getElementById('save-btn');
-      const fp = document.getElementById('folder-path');
-      dot.className = 'save-dot ' + (status === 'saved' ? 'saved' : status === 'unsaved' ? 'unsaved' : status === 'error' ? 'error' : '');
-      const displayName = folderName || 'mizan storage';
-      lbl.textContent = status === 'saved' ? 'Saved · ' + displayName : status === 'unsaved' ? 'Unsaved changes' : status === 'error' ? 'Save error!' : 'No folder selected';
-      btn.disabled = (status === 'nosave');
-      if (fp) fp.textContent = folderName ? 'mizan storage/' + FILE_NAME : 'No folder selected';
-    }
-
-    /* IndexedDB helpers */
+    /* IndexedDB helpers — used as the local browser cache */
     function idbOpen() { return new Promise((res, rej) => { const req = indexedDB.open('mizan-idb', 1); req.onupgradeneeded = e => e.target.result.createObjectStore('kv'); req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e); }); }
     async function idbGet(k) { try { const db = await idbOpen(); return new Promise((res, rej) => { const tx = db.transaction('kv', 'readonly'); const req = tx.objectStore('kv').get(k); req.onsuccess = () => res(req.result); req.onerror = () => rej(); }); } catch (e) { return null; } }
     async function idbSet(k, v) { try { const db = await idbOpen(); return new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = () => res(); tx.onerror = () => rej(); }); } catch (e) { } }
+
+    async function loadFromCache() {
+      try {
+        const cached = await idbGet('mizan_cache');
+        if (cached) { mergeDB(JSON.parse(cached)); return true; }
+      } catch(e) {}
+      return false;
+    }
+
+    function autoSave() {
+      // Write to IndexedDB immediately as browser cache
+      const snap = JSON.stringify(dbSnapshot());
+      idbSet('mizan_cache', snap);
+      driveUnsaved = true;
+      setSaveStatus('unsaved');
+      updateUnsavedState();
+    }
+
+    // Auto-sync to Google Drive every 10 seconds if there are unsaved changes
+    setInterval(async () => {
+      if (driveUnsaved && gdriveToken) {
+        const snap = JSON.stringify(dbSnapshot(), null, 2);
+        gdriveUpload(snap).then(r => {
+          if (r.ok) { driveUnsaved = false; updateUnsavedState(); }
+        });
+      }
+    }, 10000);
+
+    function setSaveStatus(status) {
+      saveStatus = status;
+      const dot = document.getElementById('save-dot');
+      const lbl = document.getElementById('save-label');
+      if (!dot || !lbl) return;
+      if (status === 'synced') {
+        dot.className = 'save-dot saved';
+        lbl.textContent = 'Synced to Drive ✓';
+      } else if (status === 'unsaved') {
+        dot.className = 'save-dot unsaved';
+        lbl.textContent = gdriveToken ? 'Syncing…' : 'Connect Drive to sync';
+      } else if (status === 'error') {
+        dot.className = 'save-dot error';
+        lbl.textContent = 'Sync error';
+      } else {
+        dot.className = 'save-dot';
+        lbl.textContent = 'Connect Drive to sync';
+      }
+    }
+
+    // Legacy stubs (referenced elsewhere, now no-ops)
+    function toLS() {}
+    function fromLS() { return false; }
 
     /* ═══════════════════════════════════════
        DATE UTILS
@@ -7541,7 +7464,7 @@
       if (e.key === ' ' && document.getElementById('focus-ov').classList.contains('on')) { e.preventDefault(); togglePause(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (document.getElementById('sij-editor').style.display !== 'none') saveEntry(); else manualSave();
+        if (document.getElementById('sij-editor').style.display !== 'none') saveEntry(); else gdriveUploadNow();
       }
     });
     document.getElementById('task-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('task-modal'); });
@@ -7745,7 +7668,8 @@
               await gdriveEnsureFolder();
               autoSave();
               updateDriveUI();
-              toast('☁ Google Drive ready — My Drive / mizan storage ✓');
+              setSaveStatus('unsaved');
+              toast('☁ Google Drive ready — syncing…');
             } catch (e) {
               toast('⚠ Folder setup failed: ' + e.message);
             }
@@ -7885,6 +7809,7 @@
           if (dot) dot.className = 'gdrive-dot connected';
           if (sub) sub.textContent = '✓ Synced to My Drive / mizan storage' + (t ? ' · ' + t : '');
           driveUnsaved = false;
+          setSaveStatus('synced');
           updateUnsavedState();
           return { ok: true };
         }
@@ -7902,29 +7827,13 @@
 
     async function gdriveUploadNow() {
       if (!gdriveToken) { toast('⚠ Not connected to Drive — connect in Settings first'); return; }
-
-      let jsonStr;
-      if (dirHandle) {
-        try {
-          const fh = await dirHandle.getFileHandle(FILE_NAME);
-          const file = await fh.getFile();
-          jsonStr = await file.text();
-          JSON.parse(jsonStr); // validate
-        } catch (e) {
-          jsonStr = JSON.stringify({ version: 2, lastSaved: new Date().toISOString(), cfg: DB.cfg, tasks: DB.tasks, habits: DB.habits, journal: DB.journal, goals: DB.goals, gym: DB.gym }, null, 2);
-          toast('ℹ No local file yet — pushing current session data');
-        }
-      } else {
-        jsonStr = JSON.stringify({ version: 2, lastSaved: new Date().toISOString(), cfg: DB.cfg, tasks: DB.tasks, habits: DB.habits, journal: DB.journal, goals: DB.goals, gym: DB.gym }, null, 2);
-      }
-
+      const jsonStr = JSON.stringify(dbSnapshot(), null, 2);
       const result = await gdriveUpload(jsonStr);
       if (result.ok) {
+        setSaveStatus('synced');
         toast('☁ Pushed to My Drive / mizan storage ✓');
       } else {
         toast('⚠ Drive upload failed: ' + result.error);
-        const sub = document.getElementById('gdrive-sub');
-        if (sub) sub.textContent = '⚠ ' + result.error;
       }
     }
 
@@ -7952,11 +7861,11 @@
         if (!fileRes.ok) throw new Error('Download failed: HTTP ' + fileRes.status);
         const data = await fileRes.json();
         mergeDB(data);
-        toLS();
+        idbSet('mizan_cache', JSON.stringify(data));
         render();
         driveUnsaved = false;
-        localUnsaved = false;
         updateUnsavedState();
+        setSaveStatus('synced');
         if (dot) dot.className = 'gdrive-dot connected';
         if (sub) sub.textContent = '✓ Synced from My Drive / mizan storage';
         toast('☁ Pulled from Drive ✓');
@@ -8971,26 +8880,17 @@
        BOOT
     ═══════════════════════════════════════ */
     async function boot() {
-      // Load from localStorage first
-      const lsLoaded = fromLS();
-      // Also try IndexedDB cache as fallback
-      if (!lsLoaded) {
-        try {
-          const cached = await idbGet('mizan_cache');
-          if (cached) mergeDB(JSON.parse(cached));
-        } catch(e) {}
-      }
+      // Load from IndexedDB browser cache first (works across same browser sessions)
+      await loadFromCache();
       applyTheme();
       renderVerse();
       updateDayDisplay();
       renderCfgVals();
       render();
-      await restoreHandle();
-      if (!dirHandle) document.getElementById('nfb').classList.add('show');
+      setSaveStatus('nosave');
       updateDriveUI();
-      // Auto-import from Google Drive if previously connected
+      // Auto-reconnect to Google Drive if previously connected
       if (DB.cfg.gdriveConnected && DB.cfg.gdriveClientId) {
-        toast('☁ Reconnecting to Google Drive…');
         try {
           await loadGoogleScript();
           gdriveTokenClient = google.accounts.oauth2.initTokenClient({
@@ -9012,19 +8912,19 @@
                   if (fileRes.ok) {
                     const data = await fileRes.json();
                     mergeDB(data);
-                    toLS();
+                    idbSet('mizan_cache', JSON.stringify(data));
                     render();
                     driveUnsaved = false;
-                    localUnsaved = false;
+                    setSaveStatus('synced');
                     updateUnsavedState();
-                    document.getElementById('nfb').classList.remove('show');
                     toast('☁ Data loaded from Google Drive ✓');
                   }
                 } else {
+                  setSaveStatus('unsaved');
                   toast('☁ Drive connected — no backup yet');
                 }
               } catch(e) {
-                toast('☁ Drive connected');
+                setSaveStatus('nosave');
               }
             }
           });
