@@ -3142,69 +3142,250 @@
 ══════════════════════════════════════════ */
     .mob-bottom-nav {
       display: none;
+    }
+
+    /* Mobile day bar */
+    .mob-day-bar {
+      display: none;
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 60px;
+      height: 52px;
       background: var(--panel);
       border-top: 1px solid var(--brd2);
       z-index: 600;
       padding-bottom: env(safe-area-inset-bottom, 0px);
+      align-items: center;
+      gap: 0;
     }
 
-    .mob-bottom-nav-inner {
-      display: flex;
-      align-items: stretch;
-      height: 60px;
+    .mob-day-arr {
+      width: 52px !important;
+      height: 52px !important;
+      border-radius: 0 !important;
+      border: none !important;
+      border-right: 1px solid var(--brd) !important;
+      background: none !important;
+      font-size: 20px;
+      flex-shrink: 0;
     }
 
-    .mbn-btn {
+    .mob-day-arr:last-child {
+      border-right: none !important;
+      border-left: 1px solid var(--brd) !important;
+    }
+
+    .mob-day-mid {
       flex: 1;
+      text-align: center;
+      cursor: pointer;
+      padding: 4px 8px;
+      min-width: 0;
+      border-radius: var(--r-sm);
+      transition: var(--ease);
+    }
+
+    .mob-day-mid:hover, .mob-day-mid:active {
+      background: var(--em-bg);
+    }
+
+    /* Day picker modal */
+    .day-picker-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 700;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .day-picker-modal.open {
       display: flex;
-      flex-direction: column;
+    }
+
+    .day-picker-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(4px);
+    }
+
+    .day-picker-box {
+      position: relative;
+      z-index: 1;
+      background: var(--panel);
+      border: 1px solid var(--brd2);
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      width: 100%;
+      max-width: 480px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 0 0 calc(20px + env(safe-area-inset-bottom));
+    }
+
+    .day-picker-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--brd);
+    }
+
+    .day-picker-title {
+      font-family: var(--ff-d);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--t1);
+    }
+
+    .day-picker-close {
+      width: 32px; height: 32px;
+      border-radius: var(--r-xs);
+      border: 1px solid var(--brd2);
+      background: var(--bg5);
+      color: var(--t4);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .day-picker-calendar {
+      padding: 16px 20px 0;
+    }
+
+    .day-picker-cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .dp-month-lbl {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--t1);
+      font-family: var(--ff-d);
+    }
+
+    .dp-nav-btn {
+      width: 30px; height: 30px;
+      border: 1px solid var(--brd2);
+      background: var(--bg5);
+      border-radius: var(--r-xs);
+      color: var(--t3);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .dp-wdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      margin-bottom: 4px;
+    }
+
+    .dp-wday {
+      text-align: center;
+      font-size: 10px;
+      font-family: var(--ff-m);
+      color: var(--t5);
+      padding: 4px 0;
+    }
+
+    .dp-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .dp-day {
+      aspect-ratio: 1;
+      display: flex;
       align-items: center;
       justify-content: center;
-      gap: 3px;
-      border: none;
-      background: none;
+      border-radius: var(--r-sm);
+      font-size: 13px;
       cursor: pointer;
-      color: var(--t5);
-      font-family: var(--ff-u);
-      font-size: 9.5px;
-      letter-spacing: .3px;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      transition: color var(--ease);
-      padding: 0;
+      color: var(--t3);
+      border: 1px solid transparent;
+      transition: var(--ease);
       position: relative;
     }
 
-    .mbn-btn.on {
-      color: var(--em3);
-    }
-
-    .mbn-btn.on::before {
+    .dp-day:hover { background: var(--bg5); color: var(--t1); }
+    .dp-day.today { border-color: var(--em-brd); color: var(--em3); }
+    .dp-day.selected { background: var(--em); color: #fff; border-color: var(--em); }
+    .dp-day.has-data::after {
       content: '';
       position: absolute;
-      top: 0;
-      left: 20%;
-      right: 20%;
-      height: 2px;
-      background: var(--em);
-      border-radius: 0 0 3px 3px;
-      box-shadow: 0 0 8px var(--em-glow);
+      bottom: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--gold3);
+    }
+    .dp-day.selected::after { background: rgba(255,255,255,.7); }
+    .dp-day.empty { pointer-events: none; }
+
+    /* Day analytics in day picker */
+    .dp-analytics {
+      padding: 16px 20px 0;
+      border-top: 1px solid var(--brd);
+      margin-top: 16px;
     }
 
-    .mbn-ic {
-      font-size: 20px;
+    .dp-analytics-title {
+      font-size: 11px;
+      font-family: var(--ff-m);
+      color: var(--t5);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .dp-analytics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .dp-stat-card {
+      background: var(--bg4);
+      border: 1px solid var(--brd);
+      border-radius: var(--r);
+      padding: 10px 12px;
+    }
+
+    .dp-stat-val {
+      font-family: var(--ff-d);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--t1);
       line-height: 1;
     }
 
-    .mbn-lbl {
-      font-size: 9px;
-      font-weight: 500;
-      line-height: 1;
+    .dp-stat-lbl {
+      font-size: 10px;
+      color: var(--t4);
+      margin-top: 2px;
+    }
+
+    .dp-jump-today {
+      display: block;
+      width: calc(100% - 40px);
+      margin: 12px 20px 0;
+      padding: 10px;
+      text-align: center;
+      background: var(--em-bg);
+      border: 1px solid var(--em-brd);
+      border-radius: var(--r-sm);
+      color: var(--em3);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: var(--ff-u);
     }
 
     /* ══════════════════════════════════════════
@@ -3257,31 +3438,46 @@
 ══════════════════════════════════════════ */
     @media (max-width:640px) {
 
-      /* ── Bottom nav: show it, hide hamburger & sidebar ── */
-      .mob-bottom-nav {
-        display: block;
+      /* ── Show hamburger & day bar, keep sidebar hidden ── */
+      .mob-day-bar {
+        display: flex;
       }
 
       .mob-nav-toggle {
-        display: none !important;
+        display: flex !important;
       }
 
       .mob-overlay {
-        display: none !important;
+        display: none;
       }
 
-      /* Sidebar gone on mobile — replaced by bottom nav */
+      .mob-overlay.on {
+        display: block;
+      }
+
+      /* Sidebar slides in from left on mobile */
       .app {
         grid-template-columns: 1fr;
       }
 
       .sidebar {
-        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 260px;
+        z-index: 400;
+        transform: translateX(-100%);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      /* Content fills full width, leaves room for bottom nav */
+      .sidebar.mob-open {
+        transform: translateX(0);
+      }
+
+      /* Content fills full width, leaves room for day bar at bottom */
       .content {
-        padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
       }
 
       .scroll {
@@ -3295,6 +3491,7 @@
       /* ── Topbar ── */
       .topbar {
         padding: 12px 16px 10px;
+        padding-left: 60px; /* space for hamburger */
       }
 
       .page-h {
@@ -3325,7 +3522,7 @@
 
       /* ── Verse banner ── */
       .verse-banner {
-        padding: 7px 14px;
+        padding: 7px 14px 7px 60px;
         gap: 8px;
       }
 
@@ -3806,7 +4003,7 @@
       .toast {
         font-size: 12px;
         padding: 8px 20px;
-        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(60px + env(safe-area-inset-bottom, 0px));
         max-width: 90vw;
         white-space: normal;
         text-align: center;
@@ -5187,46 +5384,43 @@
   <!-- Mobile nav overlay -->
   <div class="mob-overlay" id="mob-overlay" onclick="closeMobNav()"></div>
 
-  <!-- Mobile hamburger (desktop fallback only) -->
+  <!-- Mobile hamburger -->
   <button class="mob-nav-toggle" id="mob-toggle" onclick="toggleMobNav()" aria-label="Menu">☰</button>
 
-  <!-- Mobile bottom navigation bar -->
-  <nav class="mob-bottom-nav" id="mob-bottom-nav" aria-label="Main navigation">
-    <div class="mob-bottom-nav-inner">
-      <button class="mbn-btn on" id="mbn-dash" onclick="goTo('dash');mbnSetActive('dash')" aria-label="Dashboard">
-        <span class="mbn-ic">⚖️</span>
-        <span class="mbn-lbl">Dashboard</span>
-      </button>
-      <button class="mbn-btn" id="mbn-mawaqit" onclick="goTo('mawaqit');mbnSetActive('mawaqit')" aria-label="Mawaqit">
-        <span class="mbn-ic">🕌</span>
-        <span class="mbn-lbl">Mawaqit</span>
-      </button>
-      <button class="mbn-btn" id="mbn-wird" onclick="goTo('wird');mbnSetActive('wird')" aria-label="Wird">
-        <span class="mbn-ic">📿</span>
-        <span class="mbn-lbl">Wird</span>
-      </button>
-      <button class="mbn-btn" id="mbn-sijill" onclick="goTo('sijill');mbnSetActive('sijill')" aria-label="Sijill">
-        <span class="mbn-ic">📔</span>
-        <span class="mbn-lbl">Sijill</span>
-      </button>
-      <button class="mbn-btn" id="mbn-khabar" onclick="goTo('khabar');mbnSetActive('khabar')" aria-label="Khabar">
-        <span class="mbn-ic">📰</span>
-        <span class="mbn-lbl">Khabar</span>
-      </button>
-      <button class="mbn-btn" id="mbn-goals" onclick="goTo('goals');mbnSetActive('goals')" aria-label="Goals">
-        <span class="mbn-ic">🎯</span>
-        <span class="mbn-lbl">Goals</span>
-      </button>
-      <button class="mbn-btn" id="mbn-gym" onclick="goTo('gym');mbnSetActive('gym')" aria-label="Gym">
-        <span class="mbn-ic">🏋️</span>
-        <span class="mbn-lbl">Gym</span>
-      </button>
-      <button class="mbn-btn" id="mbn-settings" onclick="toggleCfg()" aria-label="Settings">
-        <span class="mbn-ic">⚙️</span>
-        <span class="mbn-lbl">Settings</span>
-      </button>
+  <!-- Mobile day nav bar (visible on mobile, replaces bottom nav) -->
+  <div class="mob-day-bar" id="mob-day-bar">
+    <button class="day-arr mob-day-arr" onclick="shiftDay(-1)">‹</button>
+    <div class="mob-day-mid" id="mob-day-mid-btn" onclick="openDayPicker()">
+      <div class="day-name" id="mob-day-name">Today</div>
+      <div class="day-full" id="mob-day-full"></div>
     </div>
-  </nav>
+    <button class="day-arr mob-day-arr" onclick="shiftDay(1)">›</button>
+  </div>
+
+  <!-- Day Picker Modal -->
+  <div class="day-picker-modal" id="day-picker-modal">
+    <div class="day-picker-bg" onclick="closeDayPicker()"></div>
+    <div class="day-picker-box">
+      <div class="day-picker-head">
+        <div class="day-picker-title">Jump to Day</div>
+        <button class="day-picker-close" onclick="closeDayPicker()">✕</button>
+      </div>
+      <div class="day-picker-calendar">
+        <div class="day-picker-cal-nav">
+          <button class="dp-nav-btn" onclick="shiftDpCal(-1)">‹</button>
+          <div class="dp-month-lbl" id="dp-month-lbl"></div>
+          <button class="dp-nav-btn" onclick="shiftDpCal(1)">›</button>
+        </div>
+        <div class="dp-wdays" id="dp-wdays"></div>
+        <div class="dp-days" id="dp-days"></div>
+      </div>
+      <div class="dp-analytics" id="dp-analytics" style="display:none">
+        <div class="dp-analytics-title">Day Analytics</div>
+        <div class="dp-analytics-grid" id="dp-analytics-grid"></div>
+      </div>
+      <button class="dp-jump-today" onclick="jumpToToday()">↩ Back to Today</button>
+    </div>
+  </div>
 
   <div class="app">
 
@@ -5288,20 +5482,14 @@
           <div class="nav-ic">📰</div>
           <div class="nav-txt"><span class="nav-en">Khabar</span><span class="nav-ar">الأخبار</span></div>
         </button>
-        <button class="nav-btn" id="nav-goals" onclick="goTo('goals')">
-          <div class="nav-ic">🎯</div>
-          <div class="nav-txt"><span class="nav-en">Goals</span><span class="nav-ar">الأهداف</span></div>
-        </button>
-        <button class="nav-btn" id="nav-gym" onclick="goTo('gym')">
-          <div class="nav-ic">🏋️</div>
-          <div class="nav-txt"><span class="nav-en">Gym</span><span class="nav-ar">الرياضة</span></div>
-        </button>
+
+
       </nav>
 
       <div class="sb-day">
         <div class="day-row">
           <button class="day-arr" onclick="shiftDay(-1)">‹</button>
-          <div class="day-mid">
+          <div class="day-mid" onclick="openDayPicker()" style="cursor:pointer" title="Click to pick a date">
             <div class="day-name" id="day-name">Today</div>
             <div class="day-full" id="day-full"></div>
           </div>
@@ -6475,11 +6663,35 @@
     }
     function autoSave() {
       toLS();
+      // Also write to IndexedDB as browser cache fallback
+      idbSet('mizan_cache', JSON.stringify({ version: 2, lastSaved: new Date().toISOString(), cfg: DB.cfg, tasks: DB.tasks, habits: DB.habits, journal: DB.journal, goals: DB.goals, gym: DB.gym }));
       localUnsaved = true;
       if (gdriveToken) driveUnsaved = true;
       if (dirHandle) setSaveStatus('unsaved', dirHandle.name);
       updateUnsavedState();
     }
+
+    // Auto-persist to Google Drive every 10 seconds if there are unsaved changes
+    setInterval(async () => {
+      if ((localUnsaved || driveUnsaved) && (dirHandle || gdriveToken)) {
+        const jsonStr = JSON.stringify({ version: 2, lastSaved: new Date().toISOString(), cfg: DB.cfg, tasks: DB.tasks, habits: DB.habits, journal: DB.journal, goals: DB.goals, gym: DB.gym }, null, 2);
+        if (dirHandle) {
+          try {
+            const fh = await dirHandle.getFileHandle(FILE_NAME, { create: true });
+            const w = await fh.createWritable();
+            await w.write(jsonStr);
+            await w.close();
+            toLS();
+            setSaveStatus('saved', dirHandle.name);
+            localUnsaved = false;
+          } catch(e) {}
+        }
+        if (gdriveToken && driveUnsaved) {
+          gdriveUpload(jsonStr).then(r => { if (r.ok) { driveUnsaved = false; updateUnsavedState(); } });
+        }
+        updateUnsavedState();
+      }
+    }, 10000);
     function setSaveStatus(status, folderName) {
       saveStatus = status;
       const dot = document.getElementById('save-dot');
@@ -6510,12 +6722,140 @@
       const off = dayOff; const d = new Date(); d.setDate(d.getDate() + off);
       const nm = document.getElementById('day-name');
       const fl = document.getElementById('day-full');
-      nm.textContent = off === 0 ? 'Today' : off === -1 ? 'Yesterday' : off === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
-      nm.className = 'day-name' + (off === 0 ? ' today-active' : '');
-      fl.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const mnm = document.getElementById('mob-day-name');
+      const mfl = document.getElementById('mob-day-full');
+      const label = off === 0 ? 'Today' : off === -1 ? 'Yesterday' : off === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
+      const fullLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const cls = 'day-name' + (off === 0 ? ' today-active' : '');
+      if (nm) { nm.textContent = label; nm.className = cls; }
+      if (fl) fl.textContent = fullLabel;
+      if (mnm) { mnm.textContent = label; mnm.className = cls; }
+      if (mfl) mfl.textContent = fullLabel;
     }
 
-    function shiftDay(d) { dayOff += d; updateDayDisplay(); render(); }
+    function shiftDay(d) { dayOff += d; updateDayDisplay(); render(); closeMobNav(); }
+
+    /* ═══════════════════════════════════════
+       DAY PICKER
+    ═══════════════════════════════════════ */
+    let dpY = new Date().getFullYear(), dpM = new Date().getMonth();
+
+    function openDayPicker() {
+      const today = new Date();
+      dpY = today.getFullYear(); dpM = today.getMonth();
+      if (dayOff !== 0) {
+        const cur = new Date(); cur.setDate(cur.getDate() + dayOff);
+        dpY = cur.getFullYear(); dpM = cur.getMonth();
+      }
+      renderDpCal();
+      document.getElementById('day-picker-modal').classList.add('open');
+    }
+
+    function closeDayPicker() {
+      document.getElementById('day-picker-modal').classList.remove('open');
+    }
+
+    function shiftDpCal(d) {
+      dpM += d;
+      if (dpM < 0) { dpM = 11; dpY--; }
+      if (dpM > 11) { dpM = 0; dpY++; }
+      renderDpCal();
+    }
+
+    function renderDpCal() {
+      const today = new Date();
+      const todayKey = today.toISOString().slice(0,10);
+      const selectedD = new Date(); selectedD.setDate(selectedD.getDate() + dayOff);
+      const selectedKey = selectedD.toISOString().slice(0,10);
+
+      document.getElementById('dp-month-lbl').textContent = MONTHS[dpM] + ' ' + dpY;
+
+      const wdEl = document.getElementById('dp-wdays');
+      wdEl.innerHTML = WDAYS.map(w => `<div class="dp-wday">${w}</div>`).join('');
+
+      const firstDay = new Date(dpY, dpM, 1).getDay();
+      const daysInMonth = new Date(dpY, dpM + 1, 0).getDate();
+      let html = '';
+
+      for (let i = 0; i < firstDay; i++) html += '<div class="dp-day empty"></div>';
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(dpY, dpM, day);
+        const dKey = d.toISOString().slice(0,10);
+        const isToday = dKey === todayKey;
+        const isSelected = dKey === selectedKey;
+
+        const hasTasks = Object.keys(DB.tasks).some(k => k.startsWith(dKey));
+        const hasJournal = DB.journal.some(j => j.date === dKey);
+        const hasHabitData = DB.habits.some(h => h.log && h.log[dKey] != null);
+        const hasData = hasTasks || hasJournal || hasHabitData;
+
+        const nowTime = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const dayTime = new Date(dpY, dpM, day);
+        const diff = Math.round((dayTime - nowTime) / 86400000);
+
+        let cls = 'dp-day';
+        if (isToday) cls += ' today';
+        if (isSelected) cls += ' selected';
+        if (hasData) cls += ' has-data';
+
+        html += `<div class="${cls}" onclick="dpSelectDay(${diff})">${day}</div>`;
+      }
+
+      document.getElementById('dp-days').innerHTML = html;
+      renderDpAnalytics(selectedKey);
+    }
+
+    function dpSelectDay(offset) {
+      dayOff = offset;
+      updateDayDisplay();
+      render();
+      renderDpCal();
+    }
+
+    function jumpToToday() {
+      dayOff = 0;
+      updateDayDisplay();
+      render();
+      closeDayPicker();
+    }
+
+    function renderDpAnalytics(dateKey) {
+      const analytics = document.getElementById('dp-analytics');
+      const grid = document.getElementById('dp-analytics-grid');
+
+      let tasksDone = 0, tasksPending = 0;
+      Object.keys(DB.tasks).forEach(k => {
+        if (k.startsWith(dateKey)) {
+          (DB.tasks[k] || []).forEach(t => { if (t.done) tasksDone++; else tasksPending++; });
+        }
+      });
+
+      let habitsDone = 0, habitsTotal = DB.habits.length;
+      DB.habits.forEach(h => { if (h.log && h.log[dateKey]) habitsDone++; });
+
+      const journalCount = DB.journal.filter(j => j.date === dateKey).length;
+
+      analytics.style.display = '';
+      grid.innerHTML = `
+        <div class="dp-stat-card">
+          <div class="dp-stat-val" style="color:var(--em3)">${tasksDone}</div>
+          <div class="dp-stat-lbl">Tasks done</div>
+        </div>
+        <div class="dp-stat-card">
+          <div class="dp-stat-val" style="color:var(--gold3)">${tasksPending}</div>
+          <div class="dp-stat-lbl">Pending tasks</div>
+        </div>
+        <div class="dp-stat-card">
+          <div class="dp-stat-val" style="color:var(--sap)">${habitsDone}<span style="font-size:14px;color:var(--t5)">/${habitsTotal}</span></div>
+          <div class="dp-stat-lbl">Habits done</div>
+        </div>
+        <div class="dp-stat-card">
+          <div class="dp-stat-val" style="color:var(--rose)">${journalCount}</div>
+          <div class="dp-stat-lbl">Journal entries</div>
+        </div>
+      `;
+    }
 
     function renderVerse() {
       const v = VERSES[Math.floor(Math.random() * VERSES.length)];
@@ -6526,12 +6866,10 @@
     /* ═══════════════════════════════════════
        NAV
     ═══════════════════════════════════════ */
-    const PAGE_TITLES = { dash: ['Dashboard', 'Your balance at a glance'], mawaqit: ['Mawaqit', 'Prayer time blocks'], wird: ['Wird', 'Habit tracker'], sijill: ['Sijill', 'Personal journal'], khabar: ['Khabar', 'World news · الأخبار العالمية'], goals: ['Goals', 'Monthly & Yearly intentions · الأهداف'], gym: ['Gym', 'Exercise library & workout tracker · التمرين'] };
+    const PAGE_TITLES = { dash: ['Dashboard', 'Your balance at a glance'], mawaqit: ['Mawaqit', 'Prayer time blocks'], wird: ['Wird', 'Habit tracker'], sijill: ['Sijill', 'Personal journal'], khabar: ['Khabar', 'World news · الأخبار العالمية'] };
 
     function mbnSetActive(pg) {
-      document.querySelectorAll('.mbn-btn').forEach(b => b.classList.remove('on'));
-      const btn = document.getElementById('mbn-' + pg);
-      if (btn) btn.classList.add('on');
+      // kept for backwards compat — no-op since bottom nav removed
     }
 
     function goTo(pg) {
@@ -6540,16 +6878,14 @@
       const sideBtn = document.getElementById('nav-' + pg);
       if (sideBtn) sideBtn.classList.add('on');
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
-      document.getElementById('panel-' + pg).classList.add('on');
+      const panel = document.getElementById('panel-' + pg);
+      if (panel) panel.classList.add('on');
       const [h, s] = PAGE_TITLES[pg] || [pg, ''];
       document.getElementById('page-h').textContent = h;
       document.getElementById('page-sub').textContent = s;
       document.getElementById('tb-right').innerHTML = '';
       if (pg === 'mawaqit') document.getElementById('tb-right').innerHTML = `<button class="btn prim sm" onclick="openTaskModal(null,PRAYERS[0])">＋ Task</button>`;
       if (pg === 'sijill') document.getElementById('tb-right').innerHTML = `<button class="btn prim sm" onclick="newEntry()">＋ Entry</button>`;
-      if (pg === 'goals') document.getElementById('tb-right').innerHTML = `<button class="btn sm" onclick="openGoalModal('monthly')" style="margin-right:6px">＋ Monthly</button><button class="btn prim sm" onclick="openGoalModal('yearly')">＋ Yearly</button>`;
-      if (pg === 'gym') document.getElementById('tb-right').innerHTML = `<button class="btn prim sm" onclick="switchGymTab('mylist');openWplanModal(null)">＋ Plan</button>`;
-      mbnSetActive(pg);
       render();
       closeMobNav();
     }
@@ -6563,8 +6899,6 @@
       if (activePg === 'wird') renderWird();
       if (activePg === 'sijill') renderSijill();
       if (activePg === 'khabar') renderKhabar();
-      if (activePg === 'goals') renderGoals();
-      if (activePg === 'gym') renderGym();
     }
 
     /* ═══════════════════════════════════════
@@ -8637,7 +8971,15 @@
        BOOT
     ═══════════════════════════════════════ */
     async function boot() {
-      fromLS();
+      // Load from localStorage first
+      const lsLoaded = fromLS();
+      // Also try IndexedDB cache as fallback
+      if (!lsLoaded) {
+        try {
+          const cached = await idbGet('mizan_cache');
+          if (cached) mergeDB(JSON.parse(cached));
+        } catch(e) {}
+      }
       applyTheme();
       renderVerse();
       updateDayDisplay();
@@ -8646,6 +8988,49 @@
       await restoreHandle();
       if (!dirHandle) document.getElementById('nfb').classList.add('show');
       updateDriveUI();
+      // Auto-import from Google Drive if previously connected
+      if (DB.cfg.gdriveConnected && DB.cfg.gdriveClientId) {
+        toast('☁ Reconnecting to Google Drive…');
+        try {
+          await loadGoogleScript();
+          gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: DB.cfg.gdriveClientId,
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            callback: async (response) => {
+              if (response.error) return;
+              gdriveToken = response.access_token;
+              updateDriveUI();
+              // Silently pull latest data from Drive
+              try {
+                await gdriveEnsureFolder();
+                const fileId = await gdriveFindFile();
+                if (fileId) {
+                  const fileRes = await fetch(
+                    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+                    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+                  );
+                  if (fileRes.ok) {
+                    const data = await fileRes.json();
+                    mergeDB(data);
+                    toLS();
+                    render();
+                    driveUnsaved = false;
+                    localUnsaved = false;
+                    updateUnsavedState();
+                    document.getElementById('nfb').classList.remove('show');
+                    toast('☁ Data loaded from Google Drive ✓');
+                  }
+                } else {
+                  toast('☁ Drive connected — no backup yet');
+                }
+              } catch(e) {
+                toast('☁ Drive connected');
+              }
+            }
+          });
+          gdriveTokenClient.requestAccessToken({ prompt: '' }); // silent token refresh
+        } catch(e) {}
+      }
     }
     boot();
   </script>
