@@ -2472,6 +2472,7 @@ let currentDate = todayStr();
 let gdriveToken = null;
 let syncDebounce = null;
 let syncState = 'idle'; // 'idle' | 'syncing' | 'ok' | 'error' | 'offline'
+let driveReady = false; // true only after successful pull or confirmed new account — blocks any push before that
 
 /* ════════════════════════════════════════════════
    SYNC STATE UI
@@ -2498,6 +2499,9 @@ function setSyncState(s, detail) {
    MARK CHANGED → DEBOUNCED DRIVE PUSH
 ════════════════════════════════════════════════ */
 function markUnsaved() {
+  // Hard guard: never push until Drive data has been loaded (or confirmed absent)
+  // This prevents any boot/init code from accidentally overwriting Drive data
+  if(!driveReady) return;
   if(!gdriveToken || !DB.gdrive.connected) {
     setSyncState('offline');
     return;
@@ -2511,7 +2515,7 @@ function markUnsaved() {
     } catch(e) {
       setSyncState('error');
     }
-  }, 1500); // 1.5s debounce — groups rapid changes
+  }, 1500);
 }
 
 
@@ -2820,29 +2824,34 @@ async function obConnectDrive() {
       cl.requestAccessToken({prompt:''});
     });
     DB.gdrive.connected = true;
-    status.textContent = 'Connected! Loading your data…';
-    // Try to pull existing data from Drive
+    sessionStorage.setItem('raqib_cid', cid);
+    setTimeout(() => silentDriveAuth(false), 55 * 60 * 1000);
+
+    status.textContent = 'Connected! Checking Drive for your data…';
+
+    // Always pull first — NEVER push during connect
     const loaded = await drivePull(true);
     if(loaded) {
-      status.textContent = 'Data loaded ✓';
+      driveReady = true; // existing data loaded — safe to write
+      status.textContent = 'Your data loaded ✓';
     } else {
-      // First time — no data yet, just mark onboarded and push
+      // Genuinely no file on Drive yet — first time ever
+      driveReady = true; // confirmed new account — safe to write on first user action
       DB.onboarded = true;
-      await drivePush();
-      status.textContent = 'Drive connected ✓';
+      status.textContent = 'Drive connected ✓ — ready to use';
     }
+
     setTimeout(() => {
       document.getElementById('onboarding').style.display = 'none';
       document.getElementById('app').classList.add('visible');
       document.getElementById('fab').style.display = 'none';
       init();
       setSyncState('ok');
-      // Auto re-auth before token expires
-      setTimeout(() => silentDriveAuth(false), 55 * 60 * 1000);
     }, 600);
   } catch(e) {
     btn.textContent = 'Connect Google Drive'; btn.disabled = false;
     status.textContent = 'Could not connect: ' + e;
+    gdriveToken = null; DB.gdrive.connected = false;
   }
 }
 function applyTheme(t) { document.documentElement.setAttribute('data-theme',t); }
@@ -2853,8 +2862,7 @@ function applyTheme(t) { document.documentElement.setAttribute('data-theme',t); 
 function init() {
   applyTheme(DB.profile.theme||'light');
   renderNav(); renderHero(); renderSection(); updateSyncUI();
-  document.getElementById('fab').style.display = 'flex'; // niyyah is default section
-  if(DB.gdrive.clientId&&DB.gdrive.connected) silentDriveAuth();
+  document.getElementById('fab').style.display = 'flex';
 }
 
 /* ════════════════════════════════════════════════
@@ -4281,8 +4289,14 @@ async function driveConnect() {
   const cid = document.getElementById('gdcid')?.value.trim();
   if(!cid){ alert('Enter your OAuth Client ID'); return; }
   DB.gdrive.clientId = cid;
-  sessionStorage.setItem('raqib_cid', cid); // UX hint only
+  sessionStorage.setItem('raqib_cid', cid);
   await silentDriveAuth(true);
+  if(!gdriveToken) return;
+  closeSettings();
+  const loaded = await drivePull(true);
+  driveReady = true; // safe to write from now on regardless
+  if(loaded) { init(); setSyncState('ok'); }
+  else { setSyncState('ok'); }
 }
 
 async function silentDriveAuth(interactive=false) {
@@ -4299,13 +4313,7 @@ async function silentDriveAuth(interactive=false) {
     });
     DB.gdrive.connected = true;
     sessionStorage.setItem('raqib_cid', DB.gdrive.clientId);
-    if(interactive) {
-      // Push current state to Drive immediately on first connect
-      await drivePush();
-      setSyncState('ok');
-      openSettings();
-    }
-    // Re-auth token before it expires (tokens last ~1h)
+    // Schedule token refresh before expiry (tokens last ~1h)
     setTimeout(() => silentDriveAuth(false), 55 * 60 * 1000);
   } catch(e) {
     if(interactive) alert('Could not connect to Drive: ' + e);
@@ -4427,6 +4435,7 @@ function driveDisconnect() {
   DB.gdrive.connected = false;
   _driveFileId = null;
   _imgFolderId = null;
+  driveReady = false;
   sessionStorage.removeItem('raqib_cid');
   if(syncDebounce) clearTimeout(syncDebounce);
   setSyncState('offline');
@@ -4440,46 +4449,53 @@ function genId() { return Math.random().toString(36).slice(2,9)+Date.now().toStr
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* ════════════════════════════════════════════════
-   BOOT — Drive-only, no local storage
+   BOOT — read-only until Drive pull succeeds
 ════════════════════════════════════════════════ */
 (async function boot() {
-  // Restore Client ID from sessionStorage (survives page refresh, not new tab)
   const storedCid = sessionStorage.getItem('raqib_cid');
   if(storedCid) DB.gdrive.clientId = storedCid;
 
   if(DB.gdrive.clientId) {
-    // Show a loading state while we auth + pull
+    // Show app shell with loading message — but markUnsaved is blocked until pull completes
     document.getElementById('onboarding').style.display = 'none';
     document.getElementById('app').classList.add('visible');
     document.getElementById('fab').style.display = 'none';
-    // Render a loading indicator
     document.getElementById('section-content').innerHTML =
       `<div style="text-align:center;padding:80px 20px;color:var(--text3);font-family:var(--serif);font-style:italic;font-size:18px">
         Loading from Drive…
        </div>`;
 
+    // Auth silently — no push, no write
     await silentDriveAuth(false);
+
     if(gdriveToken) {
       const loaded = await drivePull(true);
       if(loaded) {
+        driveReady = true; // data loaded — safe to accept writes
         init();
         setSyncState('ok');
-        setTimeout(() => silentDriveAuth(false), 55 * 60 * 1000);
         return;
       }
+      // Token worked but no file found — first time on this account
+      driveReady = true; // confirmed new account — safe to write on first user action
+      DB.onboarded = true;
+      init();
+      setSyncState('ok');
+      return;
     }
-    // Auth failed silently — show onboarding with CID pre-filled so user can re-auth
+
+    // Silent auth failed (new browser/device — needs interactive login)
+    // Go back to onboarding with CID pre-filled
     document.getElementById('app').classList.remove('visible');
     document.getElementById('onboarding').style.display = '';
-    if(storedCid) {
-      const cidInput = document.getElementById('ob-cid');
-      if(cidInput) cidInput.value = storedCid;
-      document.getElementById('ob-drive-status').textContent = 'Re-authorise to load your data.';
-    }
+    const cidInput = document.getElementById('ob-cid');
+    if(cidInput) cidInput.value = storedCid;
+    document.getElementById('ob-drive-status').textContent =
+      'Please re-authorise to load your data.';
     return;
   }
 
-  // No Client ID at all — show onboarding
+  // No Client ID — show onboarding fresh
   document.getElementById('fab').style.display = 'none';
   setSyncState('offline');
 })();
