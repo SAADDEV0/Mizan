@@ -2500,12 +2500,8 @@ function setSyncState(s, detail) {
 ════════════════════════════════════════════════ */
 function markUnsaved() {
   // Hard guard: never push until Drive data has been loaded (or confirmed absent)
-  // This prevents any boot/init code from accidentally overwriting Drive data
   if(!driveReady) return;
-  if(!gdriveToken || !DB.gdrive.connected) {
-    setSyncState('offline');
-    return;
-  }
+  if(!gdriveToken || !DB.gdrive.connected) { setSyncState('offline'); return; }
   setSyncState('syncing');
   clearTimeout(syncDebounce);
   syncDebounce = setTimeout(async () => {
@@ -2513,7 +2509,25 @@ function markUnsaved() {
       await drivePush();
       setSyncState('ok');
     } catch(e) {
-      setSyncState('error');
+      console.error('Sync failed:', e.message);
+      syncState = 'error';
+      const dot = document.getElementById('sync-dot');
+      const lbl = document.getElementById('sync-label');
+      if(dot) dot.className = 'sync-dot error';
+      if(lbl) lbl.textContent = 'Sync failed — ' + e.message;
+      // Auto-retry after 8s
+      setTimeout(() => {
+        if(syncState === 'error' && gdriveToken && driveReady) {
+          setSyncState('syncing');
+          drivePush()
+            .then(() => setSyncState('ok'))
+            .catch(err => {
+              syncState = 'error';
+              const l = document.getElementById('sync-label');
+              if(l) l.textContent = 'Sync failed — ' + err.message;
+            });
+        }
+      }, 8000);
     }
   }, 1500);
 }
@@ -2818,7 +2832,7 @@ async function obConnectDrive() {
     gdriveToken = await new Promise((res,rej) => {
       const cl = google.accounts.oauth2.initTokenClient({
         client_id: cid,
-        scope: 'https://www.googleapis.com/auth/drive.file',
+        scope: 'https://www.googleapis.com/auth/drive',
         callback: r => r.error ? rej(r.error) : res(r.access_token),
       });
       cl.requestAccessToken({prompt:''});
@@ -3521,15 +3535,16 @@ function removeTag(t) { const d=getDay(currentDate); if(!d.journal?.tags) return
 async function getOrCreateImgFolder() {
   if(_imgFolderId) return _imgFolderId;
   if(!gdriveToken) throw new Error('Not connected to Drive');
-  // Check if Images/Raqib folder already exists
   const search = await fetch(
     `https://www.googleapis.com/drive/v3/files?q=name='Raqib' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id)`,
     { headers: { Authorization: 'Bearer ' + gdriveToken } }
   );
   const sd = await search.json();
-  if(sd.files?.[0]?.id) { _imgFolderId = sd.files[0].id; return _imgFolderId; }
-
-  // Create it
+  if(sd.files?.[0]?.id) {
+    _imgFolderId = sd.files[0].id;
+    sessionStorage.setItem('raqib_imgfid', _imgFolderId);
+    return _imgFolderId;
+  }
   const create = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + gdriveToken, 'Content-Type': 'application/json' },
@@ -3537,6 +3552,7 @@ async function getOrCreateImgFolder() {
   });
   const folder = await create.json();
   _imgFolderId = folder.id;
+  sessionStorage.setItem('raqib_imgfid', _imgFolderId);
   return _imgFolderId;
 }
 
@@ -4306,7 +4322,7 @@ async function silentDriveAuth(interactive=false) {
     gdriveToken = await new Promise((res,rej) => {
       const cl = google.accounts.oauth2.initTokenClient({
         client_id: DB.gdrive.clientId,
-        scope: 'https://www.googleapis.com/auth/drive.file',
+        scope: 'https://www.googleapis.com/auth/drive',
         callback: r => r.error ? rej(r.error) : res(r.access_token),
       });
       cl.requestAccessToken({prompt: interactive ? '' : 'none'});
@@ -4361,38 +4377,70 @@ function buildDrivePayload() {
   };
 }
 
-let _driveFileId = null; // cache so we don't list every push
-let _imgFolderId = null; // cache for Images/Raqib folder
+let _driveFileId = sessionStorage.getItem('raqib_fid') || null;
+let _imgFolderId = sessionStorage.getItem('raqib_imgfid') || null;
 
-async function findDriveFile() {
-  if(_driveFileId) return _driveFileId;
-  const r = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='raqib-data.json' and trashed=false&fields=files(id)`,
-    { headers: { Authorization: 'Bearer ' + gdriveToken } }
-  );
-  const data = await r.json();
-  _driveFileId = data.files?.[0]?.id || null;
-  return _driveFileId;
+async function findDriveFile(bypassCache=false) {
+  if(_driveFileId && !bypassCache) return _driveFileId;
+  if(!gdriveToken) return null;
+  try {
+    const r = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='raqib-data.json' and trashed=false&fields=files(id)`,
+      { headers: { Authorization: 'Bearer ' + gdriveToken } }
+    );
+    if(r.status === 401) { gdriveToken = null; DB.gdrive.connected = false; setSyncState('offline'); return null; }
+    if(!r.ok) return null;
+    const data = await r.json();
+    _driveFileId = data.files?.[0]?.id || null;
+    if(_driveFileId) sessionStorage.setItem('raqib_fid', _driveFileId);
+    else sessionStorage.removeItem('raqib_fid');
+    return _driveFileId;
+  } catch(e) { return null; }
 }
 
 async function drivePush() {
   if(!gdriveToken) throw new Error('No token');
-  const fid = await findDriveFile();
+
+  let fid = await findDriveFile();
   const payload = buildDrivePayload();
   const fm = new FormData();
   fm.append('metadata', new Blob([JSON.stringify({name:'raqib-data.json'})], {type:'application/json'}));
   fm.append('file',     new Blob([JSON.stringify(payload, null, 2)],         {type:'application/json'}));
+
   const url = fid
-    ? `https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=multipart`
-    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    ? `https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=multipart&fields=id`
+    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`;
+
   const res = await fetch(url, {
     method:  fid ? 'PATCH' : 'POST',
     headers: { Authorization: 'Bearer ' + gdriveToken },
     body:    fm,
   });
-  if(!res.ok) throw new Error('Drive write failed: ' + res.status);
-  const saved = await res.json();
-  if(!fid) _driveFileId = saved.id; // cache new file id
+
+  // Token expired — silent re-auth and one retry
+  if(res.status === 401) {
+    await silentDriveAuth(false);
+    if(!gdriveToken) throw new Error('Token expired, please reconnect Drive');
+    return drivePush();
+  }
+
+  // File not found (deleted from Drive manually) — clear cache and retry as new file
+  if(res.status === 404) {
+    _driveFileId = null;
+    sessionStorage.removeItem('raqib_fid');
+    return drivePush();
+  }
+
+  if(!res.ok) {
+    const errText = await res.text().catch(()=>'');
+    throw new Error(`Drive error ${res.status}: ${errText.slice(0,200)}`);
+  }
+
+  const saved = await res.json().catch(()=>({}));
+  if(!fid && saved.id) {
+    _driveFileId = saved.id;
+    sessionStorage.setItem('raqib_fid', saved.id);
+  }
   DB.gdrive.lastSync = new Date().toISOString();
 }
 
@@ -4437,6 +4485,8 @@ function driveDisconnect() {
   _imgFolderId = null;
   driveReady = false;
   sessionStorage.removeItem('raqib_cid');
+  sessionStorage.removeItem('raqib_fid');
+  sessionStorage.removeItem('raqib_imgfid');
   if(syncDebounce) clearTimeout(syncDebounce);
   setSyncState('offline');
   openSettings();
