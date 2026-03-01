@@ -6134,7 +6134,7 @@
         <div class="gdrive-hint">
           Paste your Google OAuth <strong>Client ID</strong> to enable Drive sync.<br>
           <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Get one at Google Console →</a><br>
-          Scope: <code style="font-size:9px">drive.file</code> — saves a visible <strong>mizan storage</strong> folder in your Drive root.
+          Add <code style="font-size:10px">https://yourusername.github.io</code> to <strong>Authorized JavaScript origins</strong>.
         </div>
         <input class="gdrive-client-inp" id="gdrive-client-id" placeholder="xxxx.apps.googleusercontent.com" oninput="saveGdriveClientId(this.value)">
         <button class="btn prim" style="width:100%;justify-content:center" onclick="gdriveConnect()">Connect Google Drive</button>
@@ -7653,43 +7653,24 @@
       });
     }
 
-    function isMobile() {
-      return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
-    }
-
     async function gdriveConnect() {
       const clientId = (DB.cfg.gdriveClientId || '').trim();
       if (!clientId) { toast('⚠ Enter your Google Client ID first'); return; }
-      toast('Opening Google sign-in…');
       try {
         await loadGoogleScript();
-        if (isMobile()) {
-          // Mobile: full-page redirect flow (avoids popup blocker)
-          await idbSet('mizan_predrive', JSON.stringify(dbSnapshot()));
-          const redirectUri = location.href.split('#')[0].split('?')[0];
-          const params = new URLSearchParams({
-            client_id: clientId,
-            redirect_uri: redirectUri,
-            response_type: 'token',
-            scope: 'https://www.googleapis.com/auth/drive.file',
-            include_granted_scopes: 'true',
-          });
-          if (DB.cfg.gdriveLoginHint) params.set('login_hint', DB.cfg.gdriveLoginHint);
-          location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-        } else {
-          // Desktop: popup flow
-          gdriveTokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: clientId,
-            scope: 'https://www.googleapis.com/auth/drive.file',
-            ...(DB.cfg.gdriveLoginHint ? { hint: DB.cfg.gdriveLoginHint } : {}),
-            callback: async (response) => {
-              if (response.error) { toast('⚠ Google auth failed: ' + response.error); return; }
-              gdriveToken = response.access_token;
-              await onDriveTokenReceived(clientId, response.hint);
-            }
-          });
-          gdriveTokenClient.requestAccessToken(DB.cfg.gdriveLoginHint ? { prompt: '' } : {});
-        }
+        // Single unified flow — GIS handles popup on both desktop and mobile Chrome
+        gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          ...(DB.cfg.gdriveLoginHint ? { hint: DB.cfg.gdriveLoginHint } : {}),
+          callback: async (response) => {
+            if (response.error) { toast('⚠ Google auth failed: ' + response.error); return; }
+            gdriveToken = response.access_token;
+            await onDriveTokenReceived(clientId, response.hint);
+          }
+        });
+        // Must call requestAccessToken directly from a user gesture (button tap)
+        gdriveTokenClient.requestAccessToken({ prompt: 'consent' });
       } catch (e) {
         toast('⚠ ' + e.message);
       }
@@ -7709,20 +7690,6 @@
       } catch (e) {
         toast('⚠ Folder setup failed: ' + e.message);
       }
-    }
-
-    // Handle OAuth redirect return (mobile) — token in URL hash
-    async function handleOAuthRedirect() {
-      if (!location.hash) return false;
-      const params = new URLSearchParams(location.hash.slice(1));
-      const token = params.get('access_token');
-      if (!token) return false;
-      history.replaceState(null, '', location.pathname + location.search);
-      gdriveToken = token;
-      const pre = await idbGet('mizan_predrive');
-      if (pre) { try { mergeDB(JSON.parse(pre)); } catch(e) {} }
-      await onDriveTokenReceived(DB.cfg.gdriveClientId, null);
-      return true;
     }
 
     // Find or create the "mizan storage" folder in Drive root, return its ID
@@ -7762,20 +7729,43 @@
       return gdriveFolderId;
     }
 
-    // Find mizan-data.json inside the "mizan storage" folder
+    // Find mizan-data.json — first inside "mizan storage" folder, then anywhere
     async function gdriveFindFile() {
       if (gdriveFileId) return gdriveFileId;
       if (!gdriveFolderId) await gdriveEnsureFolder();
-      const res = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name%3D%22mizan-data.json%22+and+%22${gdriveFolderId}%22+in+parents+and+trashed%3Dfalse&fields=files(id,name,modifiedTime)`,
+
+      // Try 1: search inside the known folder
+      if (gdriveFolderId) {
+        const res = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name%3D%22mizan-data.json%22+and+%22${gdriveFolderId}%22+in+parents+and+trashed%3Dfalse&fields=files(id,name,modifiedTime)`,
+          { headers: { Authorization: 'Bearer ' + gdriveToken } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.files && data.files.length > 0) {
+            gdriveFileId = data.files[0].id;
+            return gdriveFileId;
+          }
+        }
+      }
+
+      // Try 2: search by name anywhere (catches files from other sessions/devices)
+      const res2 = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name%3D%22mizan-data.json%22+and+trashed%3Dfalse&fields=files(id,name,modifiedTime,parents)&orderBy=modifiedTime+desc`,
         { headers: { Authorization: 'Bearer ' + gdriveToken } }
       );
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.files && data.files.length > 0) {
-        gdriveFileId = data.files[0].id;
-        return gdriveFileId;
+      if (res2.ok) {
+        const data2 = await res2.json();
+        if (data2.files && data2.files.length > 0) {
+          gdriveFileId = data2.files[0].id;
+          // Update folder ID if we found it in a different folder
+          if (data2.files[0].parents && data2.files[0].parents[0]) {
+            gdriveFolderId = data2.files[0].parents[0];
+          }
+          return gdriveFileId;
+        }
       }
+
       return null;
     }
 
@@ -7837,11 +7827,7 @@
           gdriveFolderId = null;
           updateDriveUI();
           if (dot) dot.className = 'gdrive-dot';
-          if (isMobile()) {
-            // Mobile: need to re-do full redirect flow
-            toast('☁ Session expired — reconnecting…');
-            setTimeout(() => gdriveConnect(), 1200);
-          } else if (gdriveTokenClient) {
+          if (gdriveTokenClient) {
             toast('☁ Refreshing Google session…');
             gdriveTokenClient.requestAccessToken({ prompt: '' });
           } else {
@@ -7899,13 +7885,20 @@
       if (sub) sub.textContent = 'Pulling from Drive…';
       if (dot) dot.className = 'gdrive-dot syncing';
       try {
+        // Reset cached IDs so we do a fresh lookup every time
+        gdriveFolderId = null;
+        gdriveFileId = null;
+
         await gdriveEnsureFolder();
+
+        if (!gdriveFolderId) throw new Error('Could not find mizan storage folder');
+
         const fileId = await gdriveFindFile();
 
         if (!fileId) {
           if (sub) sub.textContent = '✓ Connected — My Drive / mizan storage';
           if (dot) dot.className = 'gdrive-dot connected';
-          toast('No backup found yet in "mizan storage" — push first');
+          toast('No backup found in Drive yet — push from PC first');
           return;
         }
 
@@ -7914,20 +7907,31 @@
           { headers: { Authorization: 'Bearer ' + gdriveToken } }
         );
         if (!fileRes.ok) throw new Error('Download failed: HTTP ' + fileRes.status);
-        const data = await fileRes.json();
+
+        const raw = await fileRes.text();
+        let data;
+        try { data = JSON.parse(raw); }
+        catch(e) { throw new Error('Invalid JSON from Drive'); }
+
         mergeDB(data);
         idbSet('mizan_cache', JSON.stringify(data));
+
+        // Full re-render including theme and config
+        applyTheme();
+        renderCfgVals();
+        updateDayDisplay();
         render();
+
         driveUnsaved = false;
         updateUnsavedState();
         setSaveStatus('synced');
         if (dot) dot.className = 'gdrive-dot connected';
         if (sub) sub.textContent = '✓ Synced from My Drive / mizan storage';
-        toast('☁ Pulled from Drive ✓');
+        toast('☁ Data pulled from Drive ✓');
       } catch (e) {
         if (dot) dot.className = 'gdrive-dot connected';
         if (sub) sub.textContent = '⚠ Sync error: ' + e.message;
-        toast('⚠ Drive sync failed: ' + e.message);
+        toast('⚠ Pull failed: ' + e.message);
       }
     }
 
@@ -8945,12 +8949,8 @@
       setSaveStatus('nosave');
       updateDriveUI();
 
-      // Check if we just returned from a mobile OAuth redirect
-      const wasRedirect = await handleOAuthRedirect();
-      if (wasRedirect) return; // onDriveTokenReceived handles the rest
-
-      // Auto-reconnect silently if previously connected (desktop token refresh)
-      if (DB.cfg.gdriveConnected && DB.cfg.gdriveClientId && !isMobile()) {
+      // Auto-reconnect silently if previously connected
+      if (DB.cfg.gdriveConnected && DB.cfg.gdriveClientId) {
         try {
           await loadGoogleScript();
           const cfg = {
