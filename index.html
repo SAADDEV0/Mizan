@@ -6603,6 +6603,11 @@
       updateUnsavedState();
     }
 
+    // Persist config (clientId, connected flag) to IDB immediately — called after connect/disconnect
+    function saveConfigToCache() {
+      idbSet('mizan_cache', JSON.stringify(dbSnapshot()));
+    }
+
     // Auto-sync to Google Drive every 10 seconds if there are unsaved changes
     setInterval(async () => {
       if (driveUnsaved && gdriveToken) {
@@ -7661,7 +7666,7 @@
         // Single unified flow — GIS handles popup on both desktop and mobile Chrome
         gdriveTokenClient = google.accounts.oauth2.initTokenClient({
           client_id: clientId,
-          scope: 'https://www.googleapis.com/auth/drive.file',
+          scope: 'https://www.googleapis.com/auth/drive',
           ...(DB.cfg.gdriveLoginHint ? { hint: DB.cfg.gdriveLoginHint } : {}),
           callback: async (response) => {
             if (response.error) { toast('⚠ Google auth failed: ' + response.error); return; }
@@ -7670,7 +7675,7 @@
           }
         });
         // Must call requestAccessToken directly from a user gesture (button tap)
-        gdriveTokenClient.requestAccessToken({ prompt: 'consent' });
+        gdriveTokenClient.requestAccessToken({});
       } catch (e) {
         toast('⚠ ' + e.message);
       }
@@ -7679,14 +7684,17 @@
     async function onDriveTokenReceived(clientId, hint) {
       DB.cfg.gdriveConnected = true;
       if (clientId) DB.cfg.gdriveClientId = clientId;
-      if (hint) DB.cfg.gdriveLoginHint = hint;
-      toast('☁ Connected! Setting up folder…');
+      // Save to IDB immediately so refresh keeps us connected
+      saveConfigToCache();
+      toast('☁ Setting up Drive folder…');
       try {
+        gdriveFolderId = null;
+        gdriveFileId = null;
         await gdriveEnsureFolder();
         autoSave();
         updateDriveUI();
         setSaveStatus('unsaved');
-        toast('☁ Google Drive ready — syncing…');
+        toast('☁ Google Drive connected ✓');
       } catch (e) {
         toast('⚠ Folder setup failed: ' + e.message);
       }
@@ -7941,8 +7949,10 @@
       gdriveFolderId = null;
       gdriveTokenClient = null;
       DB.cfg.gdriveConnected = false;
-      autoSave();
+      DB.cfg.gdriveLoginHint = null;
+      saveConfigToCache();
       updateDriveUI();
+      setSaveStatus('nosave');
       toast('Drive disconnected');
     }
 
@@ -8949,19 +8959,29 @@
       setSaveStatus('nosave');
       updateDriveUI();
 
-      // Auto-reconnect silently if previously connected
+      // Auto-reconnect silently on refresh if previously connected
       if (DB.cfg.gdriveConnected && DB.cfg.gdriveClientId) {
+        setSaveStatus('unsaved');
         try {
           await loadGoogleScript();
-          const cfg = {
+          gdriveTokenClient = google.accounts.oauth2.initTokenClient({
             client_id: DB.cfg.gdriveClientId,
-            scope: 'https://www.googleapis.com/auth/drive.file',
+            scope: 'https://www.googleapis.com/auth/drive',
+            ...(DB.cfg.gdriveLoginHint ? { hint: DB.cfg.gdriveLoginHint } : {}),
             callback: async (response) => {
-              if (response.error) return;
+              if (response.error || !response.access_token) {
+                // Silent refresh failed — show reconnect needed but keep data
+                setSaveStatus('nosave');
+                const lbl = document.getElementById('save-label');
+                if (lbl) lbl.textContent = 'Tap ⚙ → reconnect Drive';
+                return;
+              }
               gdriveToken = response.access_token;
-              if (response.hint) DB.cfg.gdriveLoginHint = response.hint;
               updateDriveUI();
+              // Auto-pull latest from Drive on every page load
               try {
+                gdriveFolderId = null;
+                gdriveFileId = null;
                 await gdriveEnsureFolder();
                 const fileId = await gdriveFindFile();
                 if (fileId) {
@@ -8970,25 +8990,33 @@
                     { headers: { Authorization: 'Bearer ' + gdriveToken } }
                   );
                   if (res.ok) {
-                    const data = await res.json();
+                    const raw = await res.text();
+                    const data = JSON.parse(raw);
                     mergeDB(data);
                     idbSet('mizan_cache', JSON.stringify(data));
+                    applyTheme();
+                    renderCfgVals();
+                    updateDayDisplay();
                     render();
                     driveUnsaved = false;
                     setSaveStatus('synced');
                     updateUnsavedState();
-                    toast('☁ Data loaded from Google Drive ✓');
+                  } else {
+                    setSaveStatus('unsaved');
                   }
                 } else {
                   setSaveStatus('unsaved');
                 }
-              } catch(e) { setSaveStatus('nosave'); }
+              } catch(e) {
+                setSaveStatus('unsaved');
+              }
             }
-          };
-          if (DB.cfg.gdriveLoginHint) cfg.hint = DB.cfg.gdriveLoginHint;
-          gdriveTokenClient = google.accounts.oauth2.initTokenClient(cfg);
+          });
+          // prompt:'' = silent refresh (no popup, no account picker)
           gdriveTokenClient.requestAccessToken({ prompt: '' });
-        } catch(e) {}
+        } catch(e) {
+          setSaveStatus('nosave');
+        }
       }
     }
     boot();
