@@ -11,27 +11,53 @@
    TOKENS
 ────────────────────────────────────────────── */
 :root {
-  --ink:      #1c1a16;
-  --ink2:     #3d3a33;
-  --ink3:     #7a7569;
-  --ink4:     #b0a99a;
-  --paper:    #f7f3ec;
-  --paper2:   #f0eade;
-  --cream:    #ede6d8;
-  --gold:     #b8881c;
-  --gold2:    #d4a832;
-  --gold-glow:rgba(184,136,28,0.15);
-  --green:    #2d5a3d;
-  --green2:   #3d7a53;
-  --green-bg: rgba(45,90,61,0.08);
-  --rust:     #8b3a2a;
-  --rust-bg:  rgba(139,58,42,0.08);
-  --blue:     #2a4a6b;
-  --blue-bg:  rgba(42,74,107,0.08);
+  /* ── Semantic surface tokens (light default) ── */
+  --bg:        #f5f0e8;   /* page background            */
+  --surface:   #ffffff;   /* cards, inputs, panels      */
+  --surface2:  #faf7f2;   /* nested / slightly elevated */
+  --border:    #e8e0d0;   /* dividers, outlines         */
+  --border2:   #d8cfc0;   /* stronger borders           */
 
-  --shadow-sm: 0 1px 4px rgba(28,26,22,0.06), 0 4px 16px rgba(28,26,22,0.04);
-  --shadow-md: 0 2px 8px rgba(28,26,22,0.08), 0 8px 32px rgba(28,26,22,0.06);
-  --shadow-lg: 0 4px 16px rgba(28,26,22,0.12), 0 16px 48px rgba(28,26,22,0.08);
+  /* ── Text ── */
+  --text:      #1a1814;   /* primary                    */
+  --text2:     #4a4640;   /* secondary                  */
+  --text3:     #7a7268;   /* muted                      */
+  --text4:     #a89f94;   /* placeholder / hint         */
+
+  /* ── Accent ── */
+  --gold:      #b07818;
+  --gold2:     #c98f24;
+  --gold-glow: rgba(176,120,24,0.12);
+  --green:     #2a5438;
+  --green2:    #3a6e4c;
+  --green-bg:  rgba(42,84,56,0.08);
+  --rust:      #8a3828;
+  --rust-bg:   rgba(138,56,40,0.08);
+  --blue:      #284868;
+  --blue-bg:   rgba(40,72,104,0.08);
+
+  /* ── Nav ── */
+  --nav-bg:    #1a1814;
+  --nav-text:  rgba(245,240,232,0.38);
+  --nav-active-bg: #b07818;
+  --nav-active-text: #1a1814;
+
+  /* ── Niyyah banner ── */
+  --banner-bg: #1a1814;
+  --banner-text: #f0ece4;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 3px rgba(20,18,14,0.06), 0 4px 12px rgba(20,18,14,0.04);
+  --shadow-md: 0 2px 8px rgba(20,18,14,0.08), 0 8px 28px rgba(20,18,14,0.06);
+  --shadow-lg: 0 4px 16px rgba(20,18,14,0.10), 0 16px 48px rgba(20,18,14,0.08);
+
+  /* ── Legacy aliases (so old selectors keep working) ── */
+  --ink:    var(--text);
+  --ink2:   var(--text2);
+  --ink3:   var(--text3);
+  --ink4:   var(--text4);
+  --paper:  var(--bg);
+  --cream:  var(--border);
 
   --radius-sm: 8px;
   --radius:    14px;
@@ -55,8 +81,8 @@
 html { height: 100%; scroll-behavior: smooth; }
 body {
   font-family: var(--sans);
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--bg);
+  color: var(--text);
   min-height: 100%;
   /* Subtle paper grain */
   background-image:
@@ -76,7 +102,7 @@ body {
 ────────────────────────────────────────────── */
 #onboarding {
   position: fixed; inset: 0; z-index: 900;
-  background: var(--paper);
+  background: var(--bg);
   display: flex; align-items: center; justify-content: center;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
 }
@@ -168,7 +194,7 @@ body {
 
 .ob-field {
   width: 100%;
-  background: white;
+  background: var(--surface);
   border: 1.5px solid var(--cream);
   border-radius: var(--radius);
   font-family: var(--serif);
@@ -190,7 +216,7 @@ body {
   margin-bottom: 32px;
 }
 .ob-theme {
-  background: white;
+  background: var(--surface);
   border: 2px solid var(--cream);
   border-radius: var(--radius);
   padding: 20px 12px;
@@ -276,8 +302,8 @@ body {
 }
 .hero-day-btn {
   width: 34px; height: 34px;
-  border: 1.5px solid var(--cream);
-  background: white;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   border-radius: 50%;
   color: var(--ink3);
   font-size: 14px;
@@ -292,8 +318,8 @@ body {
   font-weight: 500;
   letter-spacing: 0.5px;
   padding: 5px 14px;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--text);
+  color: var(--bg);
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s var(--ease);
@@ -302,8 +328,8 @@ body {
 .hero-settings-btn {
   position: absolute; top: 40px; right: 0;
   width: 34px; height: 34px;
-  border: 1.5px solid var(--cream);
-  background: white;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   border-radius: 50%;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -323,7 +349,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 800;
-  background: var(--ink);
+  background: var(--nav-bg);
   border-radius: 50px;
   padding: 8px 10px;
   display: flex;
@@ -340,14 +366,14 @@ body {
   cursor: pointer;
   transition: all 0.25s var(--ease-spring);
   min-width: 52px;
-  color: rgba(247,243,236,0.4);
+  color: var(--nav-text);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-.fn-item:hover { color: rgba(247,243,236,0.7); }
+.fn-item:hover { color: rgba(245,240,232,0.7); }
 .fn-item.active {
-  background: var(--gold);
-  color: var(--ink);
+  background: var(--nav-active-bg);
+  color: var(--nav-active-text);
 }
 .fn-icon { font-size: 17px; line-height: 1; }
 .fn-label {
@@ -412,7 +438,7 @@ body {
    CARDS
 ────────────────────────────────────────────── */
 .card {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s var(--ease);
@@ -426,7 +452,7 @@ body {
   display: flex; align-items: center; gap: 12px;
   cursor: pointer;
   user-select: none;
-  border-bottom: 1px solid #f5f0e8;
+  border-bottom: 1px solid var(--border);
 }
 .card-body {
   padding: 16px 20px;
@@ -436,7 +462,7 @@ body {
    NIYYAH
 ────────────────────────────────────────────── */
 .niyyah-banner {
-  background: var(--ink);
+  background: var(--banner-bg);
   border-radius: var(--radius-lg);
   padding: 28px 28px 24px;
   margin-bottom: 24px;
@@ -468,13 +494,13 @@ body {
   font-family: var(--serif);
   font-style: italic;
   font-size: 22px;
-  color: var(--paper);
+  color: var(--banner-text);
   font-weight: 300;
   resize: none;
   line-height: 1.55;
   caret-color: var(--gold2);
 }
-.niyyah-input::placeholder { color: rgba(247,243,236,0.3); }
+.niyyah-input::placeholder { color: rgba(240,236,228,0.3); }
 
 /* ──────────────────────────────────────────────
    TIME BLOCKS TIMELINE
@@ -507,8 +533,8 @@ body {
 .tblock-dot {
   width: 30px; height: 30px;
   border-radius: 50%;
-  border: 2px solid var(--cream);
-  background: white;
+  border: 2px solid var(--border);
+  background: var(--surface);
   display: flex; align-items: center; justify-content: center;
   font-size: 14px;
   transition: all 0.2s var(--ease-spring);
@@ -517,7 +543,7 @@ body {
 }
 .tblock-dot.has-tasks {
   border-color: var(--block-color, var(--gold));
-  background: color-mix(in srgb, var(--block-color, var(--gold)) 10%, white);
+  background: color-mix(in srgb, var(--block-color, var(--gold)) 10%, var(--surface));
 }
 .tblock-dot.all-done {
   background: var(--green);
@@ -534,7 +560,7 @@ body {
 }
 .tblock-card {
   flex: 1;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
@@ -558,8 +584,8 @@ body {
 }
 .tblock-badge {
   font-size: 11px;
-  color: var(--ink4);
-  background: var(--paper);
+  color: var(--text4);
+  background: var(--surface2);
   padding: 2px 9px;
   border-radius: 20px;
 }
@@ -583,7 +609,7 @@ body {
   display: flex; align-items: flex-start;
   gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid #faf7f2;
+  border-bottom: 1px solid var(--border);
   transition: opacity 0.3s;
 }
 .task-row:last-child { border-bottom: none; }
@@ -596,14 +622,14 @@ body {
 }
 .task-cb {
   width: 20px; height: 20px;
-  border: 1.5px solid var(--cream);
+  border: 1.5px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; margin-top: 2px;
   transition: all 0.2s var(--ease-spring);
   font-size: 11px;
-  background: white;
+  background: var(--surface);
 }
 .task-cb:hover { border-color: var(--green); }
 .task-cb.ticked {
@@ -636,7 +662,7 @@ body {
 }
 
 .deferred-section {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   margin-top: 16px;
@@ -682,7 +708,7 @@ body {
 .bs-panel {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  background: var(--paper);
+  background: var(--surface);
   border-radius: 24px 24px 0 0;
   padding: 20px 24px 40px;
   z-index: 851;
@@ -716,7 +742,7 @@ body {
 }
 .fi {
   width: 100%;
-  background: white;
+  background: var(--surface);
   border: 1.5px solid var(--cream);
   border-radius: var(--radius-sm);
   color: var(--ink);
@@ -734,8 +760,8 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .prio-row { display: flex; gap: 8px; }
 .prio-btn {
   flex: 1; padding: 10px;
-  background: white;
-  border: 1.5px solid var(--cream);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 12px; font-weight: 500;
   color: var(--ink3);
@@ -750,7 +776,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
 
 .submit-btn {
   width: 100%;
-  background: var(--ink);
+  background: var(--text);
   color: var(--paper);
   border: none;
   padding: 14px;
@@ -762,7 +788,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
   transition: all 0.2s var(--ease);
   box-shadow: var(--shadow-sm);
 }
-.submit-btn:hover { background: var(--ink2); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.submit-btn:hover { background: var(--text2); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
 /* ──────────────────────────────────────────────
    SALAT
@@ -788,8 +814,8 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .prayer-dot {
   width: 26px; height: 26px;
   border-radius: 50%;
-  border: 2px solid var(--cream);
-  background: white;
+  border: 2px solid var(--border);
+  background: var(--surface);
   display: flex; align-items: center; justify-content: center;
   font-size: 10px;
   transition: all 0.2s var(--ease-spring);
@@ -800,7 +826,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
 
 .prayer-card {
   flex: 1;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
@@ -831,7 +857,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .p-expand {
   display: none;
   padding: 0 16px 16px;
-  border-top: 1px solid #faf7f2;
+  border-top: 1px solid var(--border);
 }
 .prayer-card.open .p-expand { display: block; padding-top: 14px; }
 
@@ -839,8 +865,8 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .p-status-btn {
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1.5px solid var(--cream);
-  background: white;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   font-size: 12px; font-weight: 400;
   color: var(--ink3);
   cursor: pointer;
@@ -853,7 +879,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
 
 .p-notes {
   width: 100%;
-  background: var(--paper);
+  background: var(--surface2);
   border: 1.5px solid var(--cream);
   border-radius: var(--radius-sm);
   color: var(--ink);
@@ -869,7 +895,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .week-strip {
   display: flex; gap: 6px;
   margin-top: 24px;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   padding: 14px 16px;
   box-shadow: var(--shadow-sm);
@@ -879,8 +905,8 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .wday-bubble {
   width: 30px; height: 30px;
   border-radius: 50%;
-  background: var(--paper);
-  border: 1.5px solid var(--cream);
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 500;
   margin: 0 auto;
@@ -896,18 +922,18 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .fc {
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1.5px solid var(--cream);
+  border: 1.5px solid var(--border);
   font-size: 12px; font-weight: 400;
-  color: var(--ink3);
+  color: var(--text3);
   cursor: pointer;
-  background: white;
+  background: var(--surface);
   transition: all 0.2s;
 }
 .fc:hover { border-color: var(--gold); color: var(--gold); }
 .fc.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 
 .prac-card {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   display: flex; align-items: center; gap: 14px;
@@ -942,14 +968,14 @@ textarea.fi { resize: vertical; min-height: 80px; }
 
 .prac-check {
   width: 36px; height: 36px;
-  border: 2px solid var(--cream);
+  border: 2px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   font-size: 15px;
   flex-shrink: 0;
   transition: all 0.2s var(--ease-spring);
-  background: white;
+  background: var(--surface);
 }
 .prac-check:hover { border-color: var(--green); }
 .prac-check.done { background: var(--green); border-color: var(--green); color: white; transform: scale(1.05); }
@@ -984,7 +1010,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
 }
 
 .wird-card {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   display: flex; align-items: center; gap: 14px;
@@ -1046,29 +1072,10 @@ textarea.fi { resize: vertical; min-height: 80px; }
 /* ──────────────────────────────────────────────
    MUHASABAH
 ────────────────────────────────────────────── */
-.mood-row {
-  display: flex; gap: 6px;
-  margin-bottom: 20px;
-}
-.mood-btn {
-  flex: 1;
-  background: white;
-  border: 2px solid var(--cream);
-  border-radius: var(--radius);
-  padding: 12px 6px;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.2s var(--ease-spring);
-  box-shadow: var(--shadow-sm);
-}
-.mood-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.mood-btn.sel { border-color: var(--gold); background: #fffbf2; }
-.mood-e { font-size: 22px; display: block; margin-bottom: 4px; }
-.mood-l { font-size: 10px; font-weight: 500; color: var(--ink3); }
-.mood-a { font-family: var(--serif); font-size: 12px; color: var(--ink4); margin-top: 1px; }
+
 
 .j-section {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   margin-bottom: 8px;
@@ -1082,14 +1089,14 @@ textarea.fi { resize: vertical; min-height: 80px; }
   cursor: pointer;
   user-select: none;
 }
-.j-header:hover { background: #fdfbf7; }
+.j-header:hover { background: var(--surface2); }
 .j-icon { font-size: 17px; }
 .j-name { font-weight: 500; font-size: 14px; flex: 1; }
 .j-ar   { font-family: var(--serif); font-size: 14px; color: var(--ink3); }
 .j-toggle { font-size: 10px; color: var(--ink4); transition: transform 0.2s; }
 .j-section.collapsed .j-toggle { transform: rotate(-90deg); }
 .j-section.collapsed .j-body { display: none; }
-.j-body { padding: 0 18px 16px; border-top: 1px solid #faf7f2; }
+.j-body { padding: 0 18px 16px; border-top: 1px solid var(--border); }
 .j-prompt {
   font-family: var(--serif);
   font-style: italic;
@@ -1099,7 +1106,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
 }
 .j-ta {
   width: 100%;
-  background: var(--paper);
+  background: var(--surface2);
   border: 1.5px solid var(--cream);
   border-radius: var(--radius-sm);
   color: var(--ink);
@@ -1116,15 +1123,15 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .tags-zone {
   display: flex; flex-wrap: wrap; gap: 6px;
   margin-top: 16px;
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   padding: 12px 14px;
   box-shadow: var(--shadow-sm);
 }
 .tag-pill {
   display: flex; align-items: center; gap: 5px;
-  background: var(--paper);
-  border: 1px solid var(--cream);
+  background: var(--surface2);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 4px 10px;
   font-size: 12px; color: var(--ink3);
@@ -1142,68 +1149,242 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .tag-hint { font-size: 11px; color: var(--ink4); font-style: italic; align-self: center; }
 
 /* ──────────────────────────────────────────────
-   MIZAN
+   MIZAN — REDESIGNED
 ────────────────────────────────────────────── */
-.mizan-hero {
-  background: var(--ink);
-  border-radius: var(--radius-lg);
-  padding: 28px;
+
+/* ── Score ring ── */
+.mz-score-wrap {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  background: var(--banner-bg);
+  border-radius: var(--radius-xl);
+  padding: 28px 28px 24px;
   margin-bottom: 16px;
-  position: relative;
   overflow: hidden;
+  position: relative;
   box-shadow: var(--shadow-lg);
 }
-.mizan-hero::before {
-  content: '⚖';
+.mz-score-wrap::after {
+  content: 'ميزان';
   position: absolute;
-  right: 16px; bottom: 10px;
-  font-size: 80px;
-  opacity: 0.05;
-  line-height: 1;
-}
-.mizan-wk { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: rgba(212,168,50,0.7); margin-bottom: 8px; }
-.mizan-quality {
+  right: -8px; bottom: -18px;
   font-family: var(--serif);
-  font-size: 52px; font-weight: 300;
-  color: var(--paper);
+  font-size: 90px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.03);
   line-height: 1;
-  margin-bottom: 4px;
+  pointer-events: none;
+  user-select: none;
 }
-.mizan-qar { font-family: var(--serif); font-size: 24px; color: var(--gold2); }
-.mizan-bars { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-.mbar { display: flex; align-items: center; gap: 10px; }
-.mbar-lbl { font-size: 11px; color: rgba(247,243,236,0.5); width: 70px; flex-shrink: 0; }
-.mbar-track { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
-.mbar-fill  { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.8s var(--ease); }
-.mbar-pct   { font-size: 12px; font-weight: 500; color: rgba(247,243,236,0.7); width: 32px; text-align: right; }
+.mz-ring-col {
+  flex-shrink: 0;
+  position: relative;
+  width: 96px; height: 96px;
+}
+.mz-ring-col svg { transform: rotate(-90deg); }
+.mz-ring-label {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1px;
+}
+.mz-score-num {
+  font-family: var(--serif);
+  font-size: 32px; font-weight: 300;
+  line-height: 1;
+  color: var(--banner-text);
+}
+.mz-score-pct {
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 1px;
+  color: rgba(200,149,42,0.8);
+}
+.mz-right { flex: 1; min-width: 0; }
+.mz-week-label {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: rgba(200,149,42,0.65);
+  margin-bottom: 5px;
+}
+.mz-quality {
+  font-family: var(--serif);
+  font-size: 38px; font-weight: 300;
+  color: var(--banner-text);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.mz-quality-ar {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--gold2);
+  margin-bottom: 16px;
+}
+.mz-pillars { display: flex; flex-direction: column; gap: 7px; }
+.mz-pillar { display: flex; align-items: center; gap: 8px; }
+.mz-pillar-icon { font-size: 12px; width: 16px; flex-shrink: 0; }
+.mz-pillar-name { font-size: 10px; letter-spacing: 0.5px; color: rgba(180,174,162,0.6); width: 62px; flex-shrink: 0; }
+.mz-pillar-track { flex: 1; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+.mz-pillar-fill { height: 100%; border-radius: 2px; transition: width 1s var(--ease); }
+.mz-pillar-val { font-size: 11px; font-weight: 500; color: rgba(200,190,170,0.6); width: 30px; text-align: right; flex-shrink: 0; }
 
-.chart-card {
-  background: white;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 20px;
-  margin-bottom: 10px;
+/* ── 7-day calendar strip ── */
+.mz-week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 16px;
 }
-.chart-title {
+.mz-day-cell {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+}
+.mz-day-label {
+  font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--text4); font-weight: 500;
+}
+.mz-day-card {
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  padding: 8px 4px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s;
+  min-height: 68px;
+  justify-content: center;
+}
+.mz-day-card.is-today { border-color: var(--gold); }
+.mz-day-card.is-future { opacity: 0.4; }
+.mz-day-prayers {
+  display: flex; gap: 2px; flex-wrap: wrap; justify-content: center;
+}
+.mz-prayer-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s;
+}
+.mz-prayer-dot.on   { background: var(--green); }
+.mz-prayer-dot.late { background: var(--gold); }
+.mz-prayer-dot.miss { background: var(--rust); }
+.mz-day-tasks {
+  font-size: 9px; color: var(--text4); margin-top: 2px;
+  font-weight: 500;
+}
+.mz-day-tasks.done { color: var(--green); }
+.mz-day-num {
   font-family: var(--serif);
-  font-size: 18px; font-weight: 400;
-  color: var(--ink);
+  font-size: 15px; font-weight: 400;
+  color: var(--text2);
+  line-height: 1;
+}
+.mz-day-card.is-today .mz-day-num { color: var(--gold); }
+
+/* ── Heatmap section ── */
+.mz-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.mz-section-title {
+  font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--gold); font-weight: 500;
   margin-bottom: 14px;
 }
 canvas { width: 100%; display: block; }
 
-.streak-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid #faf7f2;
+/* ── Practice streaks ── */
+.mz-streak-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
 }
-.streak-row:last-child { border-bottom: none; }
-.streak-emoji { font-size: 18px; flex-shrink: 0; }
-.streak-name  { font-size: 13px; flex: 1; }
-.streak-nums  { font-size: 11px; color: var(--ink4); }
+.mz-streak-item:last-child { border-bottom: none; }
+.mz-streak-emoji { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
+.mz-streak-info { flex: 1; min-width: 0; }
+.mz-streak-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 5px; }
+.mz-streak-bar-wrap { position: relative; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.mz-streak-bar { height: 100%; border-radius: 3px; transition: width 0.8s var(--ease); }
+.mz-streak-nums {
+  flex-shrink: 0;
+  text-align: right;
+}
+.mz-streak-current { font-size: 18px; font-weight: 300; font-family: var(--serif); color: var(--text); line-height: 1; }
+.mz-streak-best { font-size: 10px; color: var(--text4); margin-top: 1px; }
+
+/* ── Quote card ── */
+.mz-quote {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  border-top: 3px solid var(--gold);
+  position: relative;
+  overflow: hidden;
+}
+.mz-quote::before {
+  content: '"';
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: var(--serif);
+  font-size: 120px;
+  color: var(--gold);
+  opacity: 0.06;
+  line-height: 1;
+  user-select: none;
+}
+.mz-quote-label {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gold); font-weight: 500;
+  margin-bottom: 14px;
+}
+.mz-quote-text {
+  font-family: var(--serif);
+  font-size: 21px; font-weight: 300;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+.mz-quote-source {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--gold); font-weight: 500;
+}
+.mz-quote-copy {
+  position: absolute; top: 20px; right: 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.5px;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mz-quote-copy:hover { border-color: var(--gold); color: var(--gold); }
+
+/* legacy for letter-copy still referenced */
+.letter-copy {
+  position: absolute; top: 20px; right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+.letter-copy:hover { border-color: var(--gold); color: var(--gold); }
 
 .letter-card {
-  background: linear-gradient(135deg, #fffbf0 0%, #fff9ed 100%);
+  background: linear-gradient(135deg, var(--surface2) 0%, var(--surface) 100%);
   border-radius: var(--radius-lg);
   padding: 28px;
   margin-bottom: 16px;
@@ -1226,7 +1407,7 @@ canvas { width: 100%; display: block; }
 }
 .letter-copy {
   position: absolute; top: 20px; right: 20px;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--cream);
   border-radius: 8px;
   padding: 5px 12px;
@@ -1251,7 +1432,7 @@ canvas { width: 100%; display: block; }
 }
 .modal-bg.open { display: flex; }
 .modal-box {
-  background: var(--paper);
+  background: var(--surface);
   border-radius: var(--radius-xl);
   padding: 28px;
   width: 90%; max-width: 460px;
@@ -1274,8 +1455,8 @@ canvas { width: 100%; display: block; }
 .mf-btn {
   flex: 1; padding: 12px;
   border-radius: var(--radius-sm);
-  border: 1.5px solid var(--cream);
-  background: white;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   color: var(--ink3);
   font-family: var(--sans);
   font-size: 14px; font-weight: 400;
@@ -1325,7 +1506,7 @@ canvas { width: 100%; display: block; }
   position: fixed;
   top: 0; right: -380px;
   width: 360px; height: 100vh;
-  background: var(--paper);
+  background: var(--surface);
   box-shadow: -4px 0 32px rgba(28,26,22,0.12);
   z-index: 851;
   transition: right 0.3s var(--ease);
@@ -1343,7 +1524,7 @@ canvas { width: 100%; display: block; }
 }
 .settings-close {
   width: 32px; height: 32px;
-  background: white; border: 1.5px solid var(--cream);
+  background: var(--surface); border: 1.5px solid var(--border);
   border-radius: 50%;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -1367,7 +1548,7 @@ canvas { width: 100%; display: block; }
 .s-row-sub { font-size: 12px; color: var(--ink4); margin-top: 1px; }
 .s-btn {
   width: 100%;
-  background: white;
+  background: var(--surface);
   border: 1.5px solid var(--cream);
   border-radius: var(--radius-sm);
   color: var(--ink3);
@@ -1388,20 +1569,20 @@ canvas { width: 100%; display: block; }
 .th-btn {
   flex: 1; padding: 10px 8px;
   border-radius: var(--radius-sm);
-  border: 2px solid var(--cream);
+  border: 2px solid var(--border);
   cursor: pointer; font-size: 12px;
   text-align: center;
   transition: all 0.2s;
   box-shadow: var(--shadow-sm);
 }
 .th-btn.sel { border-color: var(--gold); }
-.th-btn[data-t="dark"]      { background: #13131f; color: #9e9a8e; }
-.th-btn[data-t="light"]     { background: #f8f5ee; color: #6b6760; }
-.th-btn[data-t="parchment"] { background: #2f2920; color: #a89878; }
+.th-btn[data-t="dark"]      { background: #16161e; color: #7e7870; }
+.th-btn[data-t="light"]     { background: #f5f0e8; color: #6a6460; }
+.th-btn[data-t="parchment"] { background: #2e2416; color: #9a8464; }
 
 .drive-status-pill {
   display: flex; align-items: center; gap: 8px;
-  background: white;
+  background: var(--surface);
   border: 1.5px solid var(--cream);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
@@ -1423,143 +1604,150 @@ canvas { width: 100%; display: block; }
 @keyframes pulse   { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
 
 /* ──────────────────────────────────────────────
-   DARK THEME OVERRIDE
+   DARK THEME
+   Philosophy: deep neutral slate, no pure blacks,
+   soft blue-grey surfaces, gold accent unchanged
 ────────────────────────────────────────────── */
 [data-theme="dark"] {
-  --ink:      #e8e4d9;
-  --ink2:     #c8c2b4;
-  --ink3:     #9e9a8e;
-  --ink4:     #6b6760;
-  --paper:    #0f0f14;
-  --cream:    #1e1e2c;
-  --gold:     #c8952a;
-  --gold2:    #d4a832;
-  --gold-glow:rgba(200,149,42,0.12);
-  --green:    #4a7c5f;
-  --green-bg: rgba(74,124,95,0.1);
-  --rust:     #c0503a;
-  --rust-bg:  rgba(192,80,58,0.1);
-  --blue:     #4a7ab0;
-  --blue-bg:  rgba(74,122,176,0.1);
-  --shadow-sm: 0 1px 4px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.25), 0 8px 32px rgba(0,0,0,0.15);
-  --shadow-lg: 0 4px 16px rgba(0,0,0,0.3), 0 16px 48px rgba(0,0,0,0.2);
+  --bg:        #16161e;
+  --surface:   #1f1f2a;
+  --surface2:  #19192280;
+  --border:    #2e2e3e;
+  --border2:   #3a3a4e;
+
+  --text:      #ddd8cc;
+  --text2:     #b0a898;
+  --text3:     #7e7870;
+  --text4:     #524e48;
+
+  --gold:      #c8952a;
+  --gold2:     #dba838;
+  --gold-glow: rgba(200,149,42,0.14);
+  --green:     #4a7c5f;
+  --green2:    #5a9270;
+  --green-bg:  rgba(74,124,95,0.12);
+  --rust:      #b84e3a;
+  --rust-bg:   rgba(184,78,58,0.12);
+  --blue:      #4878a8;
+  --blue-bg:   rgba(72,120,168,0.12);
+
+  --nav-bg:             #111118;
+  --nav-text:           rgba(220,215,204,0.35);
+  --nav-active-bg:      #c8952a;
+  --nav-active-text:    #111118;
+
+  --banner-bg:   #111118;
+  --banner-text: #ddd8cc;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.25), 0 4px 12px rgba(0,0,0,0.15);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.30), 0 8px 28px rgba(0,0,0,0.20);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.35), 0 16px 48px rgba(0,0,0,0.25);
+
+  --ink:    var(--text);
+  --ink2:   var(--text2);
+  --ink3:   var(--text3);
+  --ink4:   var(--text4);
+  --paper:  var(--bg);
+  --cream:  var(--border);
 }
-[data-theme="dark"] body { background: #0f0f14; }
-[data-theme="dark"] .card,
-[data-theme="dark"] .block-card,
-[data-theme="dark"] .prayer-card,
-[data-theme="dark"] .prac-card,
-[data-theme="dark"] .wird-card,
-[data-theme="dark"] .chart-card,
-[data-theme="dark"] .mood-btn,
-[data-theme="dark"] .j-section,
-[data-theme="dark"] .week-strip,
-[data-theme="dark"] .tags-zone,
-[data-theme="dark"] .drive-status-pill,
-[data-theme="dark"] .s-btn,
-[data-theme="dark"] .mf-btn,
-[data-theme="dark"] .fi { background: #1a1a28; }
-[data-theme="dark"] .ob-theme,
-[data-theme="dark"] .hero-day-btn,
-[data-theme="dark"] .hero-settings-btn { background: #1a1a28; }
-[data-theme="dark"] .fi { border-color: #2a2a3a; }
-[data-theme="dark"] .niyyah-banner { background: #0d0d18; border: 1px solid #2a2a3a; }
-[data-theme="dark"] .mizan-hero { background: #1a1a28; border: 1px solid #2a2a3a; }
-[data-theme="dark"] .letter-card { background: #1a1a20; }
-[data-theme="dark"] .hero-date { color: var(--ink); }
-[data-theme="dark"] #float-nav { background: #1a1a28; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
-[data-theme="dark"] .fn-item { color: rgba(232,228,217,0.3); }
-[data-theme="dark"] .fn-item.active { background: var(--gold); color: #1a1a28; }
-[data-theme="dark"] .prac-dots .pdot { background: #2a2a38; }
-[data-theme="dark"] .j-prompt { color: var(--gold); }
-[data-theme="dark"] .j-ta, [data-theme="dark"] .p-notes { background: #13131f; border-color: #2a2a3a; }
-[data-theme="dark"] .modal-box, [data-theme="dark"] .settings-drawer, [data-theme="dark"] .bs-panel { background: #13131f; }
-[data-theme="dark"] .ob-theme[data-t="dark"] { border-color: var(--cream); }
-[data-theme="dark"] .ob-field { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] .fc { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] .prio-btn { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] .hero-brand { color: var(--gold); }
-[data-theme="dark"] .onboarding-themes .ob-theme,
-[data-theme="dark"] .ob-theme[data-t="light"] { background: #f8f5ee; }
-[data-theme="dark"] .wday-bubble { background: #1e1e2c; }
-[data-theme="dark"] .tag-pill { background: #1e1e2c; border-color: #2a2a3a; }
-[data-theme="dark"] .tags-zone { border: 1px solid #2a2a3a; }
-/* ---- dark: additional overrides ---- */
-[data-theme="dark"] .deferred-section { background: #1a1a28; border: 1px solid #2a2a3a; }
-[data-theme="dark"] .deferred-head { color: var(--ink3); }
-[data-theme="dark"] .card-header { border-bottom-color: #2a2a3a; }
-[data-theme="dark"] .block-count { background: #0f0f14; color: var(--ink4); }
-[data-theme="dark"] .hero-today-pill { background: var(--ink); color: var(--paper); }
-[data-theme="dark"] .hero-today-pill:hover { background: var(--gold); }
-[data-theme="dark"] .task-row { border-bottom-color: #2a2a3a; }
-[data-theme="dark"] .task-cb { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] .j-header:hover { background: #1e1e2c; }
-[data-theme="dark"] .j-body { border-top-color: #2a2a3a; }
-[data-theme="dark"] .p-expand { border-top-color: #2a2a3a; }
-[data-theme="dark"] .p-status-btn { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] .section-rule { border-color: #2a2a3a; }
-[data-theme="dark"] .letter-copy { background: #1a1a28; border-color: #2a2a3a; color: var(--ink3); }
-[data-theme="dark"] .add-ghost { border-color: #2a2a3a; color: var(--ink4); }
-[data-theme="dark"] .add-ghost:hover { border-color: var(--gold); color: var(--gold); }
-[data-theme="dark"] .th-btn { color: var(--ink3); border-color: #2a2a3a; }
-[data-theme="dark"] .settings-close { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] #hero { border-bottom-color: #2a2a3a; }
-[data-theme="dark"] .s-head { border-bottom-color: #2a2a3a; }
-[data-theme="dark"] .streak-row { border-bottom-color: #2a2a3a; }
-[data-theme="dark"] .prayer-line { background: linear-gradient(to bottom, transparent, #2a2a3a 10%, #2a2a3a 90%, transparent); }
-[data-theme="dark"] .prayer-dot { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] .prac-check { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] .mood-btn.sel { background: #1e1e2a; }
-[data-theme="dark"] .wday-label { color: var(--ink4); }
-[data-theme="dark"] .fc { background: #1a1a28 !important; border-color: #2a2a3a !important; }
-[data-theme="dark"] .fc.on { background: var(--ink) !important; border-color: var(--ink) !important; }
-[data-theme="dark"] .prio-btn { background: #1a1a28 !important; border-color: #2a2a3a !important; }
-[data-theme="dark"] .tblock-card { background: #1a1a28; }
-[data-theme="dark"] .tblock-dot { background: #1a1a28; border-color: #2a2a3a; }
-[data-theme="dark"] .tblock-badge { background: #0f0f14; color: var(--ink4); }
-[data-theme="dark"] .timeline-spine { background: linear-gradient(to bottom, transparent, #2a2a3a 8%, #2a2a3a 92%, transparent); }
+
+/* Surfaces that hardcoded 'white' in light — ensure token propagation */
+[data-theme="dark"] body { background: var(--bg); }
+[data-theme="dark"] #onboarding { background: var(--bg); }
+[data-theme="dark"] .ob-field { color: var(--text); }
+[data-theme="dark"] .ob-theme[data-t="light"] { background: #f5f0e8; color: #4a4640; }
+[data-theme="dark"] .ob-theme[data-t="dark"]  { border-color: var(--gold); }
+[data-theme="dark"] .ob-primary { background: var(--text); color: var(--bg); }
+[data-theme="dark"] .ob-primary:hover { background: var(--text2); }
+[data-theme="dark"] .hero-today-pill { background: var(--text); color: var(--bg); }
+[data-theme="dark"] .hero-today-pill:hover { background: var(--gold); color: var(--bg); }
+[data-theme="dark"] .fn-item:hover { color: rgba(220,215,204,0.75); }
+[data-theme="dark"] #float-nav { box-shadow: 0 4px 24px rgba(0,0,0,0.45); }
+[data-theme="dark"] .niyyah-banner::before { color: rgba(200,149,42,0.08); }
+[data-theme="dark"] .niyyah-input::placeholder { color: rgba(220,215,204,0.25); }
+[data-theme="dark"] .prac-dots .pdot { background: var(--border2); }
+[data-theme="dark"] .submit-btn { background: var(--text); color: var(--bg); }
+[data-theme="dark"] .submit-btn:hover { background: var(--text2); }
+[data-theme="dark"] .fc.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+[data-theme="dark"] .th-btn[data-t="dark"] { border-color: var(--gold); }
+[data-theme="dark"] .mizan-hero { background: var(--surface); border: 1px solid var(--border); }
+[data-theme="dark"] .letter-card { background: var(--surface); border-color: var(--border); }
+[data-theme="dark"] .tblock-dot.has-tasks { background: color-mix(in srgb, var(--block-color, var(--gold)) 12%, var(--surface)); }
+[data-theme="dark"] .j-header:hover { background: var(--surface2); }
+[data-theme="dark"] .mf-btn.pri { background: var(--text); border-color: var(--text); color: var(--bg); }
+[data-theme="dark"] .mf-btn.pri:hover { background: var(--text2); }
 
 /* ──────────────────────────────────────────────
-   PARCHMENT THEME
+   PARCHMENT (AMBER) THEME
+   Philosophy: warm deep brown, aged manuscript,
+   candlelit; more saturated than dark but not harsh
 ────────────────────────────────────────────── */
 [data-theme="parchment"] {
-  --ink:      #f0e8d0;
-  --ink2:     #d4c8a8;
-  --ink3:     #a89878;
-  --ink4:     #7a6a50;
-  --paper:    #2a2318;
-  --cream:    #3a2f20;
-  --gold:     #d4a832;
-  --gold2:    #e0bc50;
-  --green:    #4a8060;
-  --green-bg: rgba(74,128,96,0.1);
-  --shadow-sm: 0 1px 4px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
-  --shadow-md: 0 2px 8px rgba(0,0,0,0.35), 0 8px 32px rgba(0,0,0,0.25);
+  --bg:        #231c12;
+  --surface:   #2e2416;
+  --surface2:  #281e1080;
+  --border:    #3e3020;
+  --border2:   #4e3e2a;
+
+  --text:      #ede0c4;
+  --text2:     #c8b48a;
+  --text3:     #9a8464;
+  --text4:     #6a5840;
+
+  --gold:      #d4a832;
+  --gold2:     #e4bc50;
+  --gold-glow: rgba(212,168,50,0.14);
+  --green:     #4a8060;
+  --green2:    #5a9470;
+  --green-bg:  rgba(74,128,96,0.1);
+  --rust:      #b84e38;
+  --rust-bg:   rgba(184,78,56,0.1);
+  --blue:      #4878a8;
+  --blue-bg:   rgba(72,120,168,0.1);
+
+  --nav-bg:             #181208;
+  --nav-text:           rgba(237,224,196,0.35);
+  --nav-active-bg:      #d4a832;
+  --nav-active-text:    #181208;
+
+  --banner-bg:   #181208;
+  --banner-text: #ede0c4;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.20);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.35), 0 8px 28px rgba(0,0,0,0.25);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.40), 0 16px 48px rgba(0,0,0,0.30);
+
+  --ink:    var(--text);
+  --ink2:   var(--text2);
+  --ink3:   var(--text3);
+  --ink4:   var(--text4);
+  --paper:  var(--bg);
+  --cream:  var(--border);
 }
-[data-theme="parchment"] body { background: #2a2318; }
-[data-theme="parchment"] .card,
-[data-theme="parchment"] .block-card,
-[data-theme="parchment"] .prayer-card,
-[data-theme="parchment"] .prac-card,
-[data-theme="parchment"] .wird-card,
-[data-theme="parchment"] .chart-card,
-[data-theme="parchment"] .mood-btn,
-[data-theme="parchment"] .j-section,
-[data-theme="parchment"] .week-strip,
-[data-theme="parchment"] .tags-zone,
-[data-theme="parchment"] .fi,
-[data-theme="parchment"] .mf-btn { background: #382f22; }
-[data-theme="parchment"] .fi { border-color: var(--cream); }
-[data-theme="parchment"] #float-nav { background: #382f22; }
-[data-theme="parchment"] .fn-item { color: rgba(240,232,208,0.3); }
-[data-theme="parchment"] .fn-item.active { background: var(--gold); color: #2a2318; }
+
+[data-theme="parchment"] body { background: var(--bg); }
+[data-theme="parchment"] #onboarding { background: var(--bg); }
+[data-theme="parchment"] .ob-theme[data-t="light"] { background: #f5f0e8; color: #4a4640; }
+[data-theme="parchment"] .ob-theme[data-t="parchment"] { border-color: var(--gold); }
+[data-theme="parchment"] .ob-primary { background: var(--text); color: var(--bg); }
+[data-theme="parchment"] .hero-today-pill { background: var(--text); color: var(--bg); }
+[data-theme="parchment"] .hero-today-pill:hover { background: var(--gold); color: var(--bg); }
+[data-theme="parchment"] .fn-item:hover { color: rgba(237,224,196,0.75); }
+[data-theme="parchment"] #float-nav { box-shadow: 0 4px 24px rgba(0,0,0,0.50); }
+[data-theme="parchment"] .niyyah-input::placeholder { color: rgba(237,224,196,0.25); }
+[data-theme="parchment"] .prac-dots .pdot { background: var(--border2); }
+[data-theme="parchment"] .submit-btn { background: var(--text); color: var(--bg); }
+[data-theme="parchment"] .submit-btn:hover { background: var(--text2); }
+[data-theme="parchment"] .fc.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+[data-theme="parchment"] .mizan-hero { background: var(--surface); border: 1px solid var(--border); }
+[data-theme="parchment"] .letter-card { background: var(--surface); border-color: var(--border); }
+[data-theme="parchment"] .tblock-dot.has-tasks { background: color-mix(in srgb, var(--block-color, var(--gold)) 12%, var(--surface)); }
+[data-theme="parchment"] .j-header:hover { background: var(--surface2); }
+[data-theme="parchment"] .mf-btn.pri { background: var(--text); border-color: var(--text); color: var(--bg); }
+[data-theme="parchment"] .mf-btn.pri:hover { background: var(--text2); }
 [data-theme="parchment"] .modal-box,
 [data-theme="parchment"] .settings-drawer,
-[data-theme="parchment"] .bs-panel { background: #2a2318; }
-[data-theme="parchment"] .tblock-card { background: #382f22; }
-[data-theme="parchment"] .tblock-dot { background: #382f22; border-color: var(--cream); }
-[data-theme="parchment"] .tblock-badge { background: #2a2318; color: var(--ink4); }
+[data-theme="parchment"] .bs-panel { background: var(--bg); }
 
 /* ──────────────────────────────────────────────
    RESPONSIVE
@@ -1739,13 +1927,7 @@ const CATEGORIES = [
   { id:'ruh',    en:'Ruh',    ar:'روح',   color:'#5a3a7a' },
   { id:'dunya',  en:'Dunya',  ar:'دنيا',  color:'#7a5020' },
 ];
-const MOODS = [
-  { id:'dhayyiq',  en:'Dhayyiq',  ar:'ضيّق',   emoji:'😔', label:'Constricted' },
-  { id:'ta_ib',    en:"Ta'ib",    ar:'تعب',    emoji:'😞', label:'Weary' },
-  { id:'mu_tadil', en:"Mu'tadil", ar:'معتدل',  emoji:'😐', label:'Balanced' },
-  { id:'murtah',   en:'Murtah',   ar:'مرتاح',  emoji:'🙂', label:'At ease' },
-  { id:'farih',    en:'Farih',    ar:'فرح',    emoji:'😊', label:'Joyful' },
-];
+
 const DEFAULT_WIRD = [
   { id:'w1', ar:'سُبْحَانَ اللَّهِ',  en:'Subhanallah',   target:33 },
   { id:'w2', ar:'الْحَمْدُ لِلَّهِ', en:'Alhamdulillah', target:33 },
@@ -1820,7 +2002,7 @@ function shiftDay(n) {
 }
 function goToday() { currentDate=todayStr(); renderHero(); renderSection(); }
 function getDay(s) {
-  if(!DB.days[s]) DB.days[s]={ niyyah:'', tasks:[], prayers:{}, practicesDone:{}, wirdCounts:{}, journal:{mood:'',shukr:'',amal:'',azm:'',free:'',tags:[]} };
+  if(!DB.days[s]) DB.days[s]={ niyyah:'', tasks:[], prayers:{}, practicesDone:{}, wirdCounts:{}, journal:{shukr:'',amal:'',azm:'',free:'',tags:[]} };
   return DB.days[s];
 }
 function getDayRO(s) { return DB.days[s]||null; }
@@ -2330,7 +2512,7 @@ function closeModal() { document.getElementById('modal-bg').classList.remove('op
 ════════════════════════════════════════════════ */
 function renderMuhasabah(el) {
   const day=getDay(currentDate);
-  if(!day.journal) day.journal={mood:'',shukr:'',amal:'',azm:'',free:'',tags:[]};
+  if(!day.journal) day.journal={shukr:'',amal:'',azm:'',free:'',tags:[]};
   const j=day.journal;
 
   const deferred=getDeferredTasks().length;
@@ -2343,17 +2525,6 @@ function renderMuhasabah(el) {
     <div class="s-title">Muhasabah <span class="s-title-ar">محاسبة</span></div>
     <div class="s-sub" style="font-family:var(--serif);font-style:italic">"Call yourself to account before you are called to account."</div>
   </div>`;
-
-  // Mood
-  h+=`<div class="mood-row">`;
-  MOODS.forEach(m=>{
-    h+=`<div class="mood-btn ${j.mood===m.id?'sel':''}" onclick="setMood('${m.id}')">
-      <span class="mood-e">${m.emoji}</span>
-      <div class="mood-l">${m.en}</div>
-      <div class="mood-a">${m.ar}</div>
-    </div>`;
-  });
-  h+=`</div>`;
 
   const jsecs=[
     {id:'shukr',icon:'✨',en:'Shukr',ar:'شكر',prompt:shukrP,field:'shukr'},
@@ -2388,7 +2559,6 @@ function renderMuhasabah(el) {
   el.innerHTML=h;
 }
 function toggleJ(id) { const el=document.getElementById('js-'+id); el.classList.toggle('collapsed'); el.classList.toggle('open',!el.classList.contains('collapsed')); }
-function setMood(id) { const d=getDay(currentDate); if(!d.journal) d.journal={}; d.journal.mood=id; markUnsaved(); renderSection(); }
 function saveJ(f,v) { const d=getDay(currentDate); if(!d.journal) d.journal={}; d.journal[f]=v; markUnsaved(); }
 function tagKD(e) {
   if(e.key==='Enter'||e.key===','){
@@ -2402,57 +2572,145 @@ function tagKD(e) {
 function removeTag(t) { const d=getDay(currentDate); if(!d.journal?.tags) return; d.journal.tags=d.journal.tags.filter(x=>x!==t); markUnsaved(); renderSection(); }
 
 /* ════════════════════════════════════════════════
-   MIZAN
+   MIZAN — REDESIGNED
 ════════════════════════════════════════════════ */
 function renderMizan(el) {
-  const ws=getWeekStats();
-  const qual=ws.score>80?{en:'Mumtaz',ar:'ممتاز'}:ws.score>55?{en:'Jayyid',ar:'جيّد'}:{en:'Maqbul',ar:'مقبول'};
+  const ws   = getWeekStats();
+  const score= ws.score;
+  const qual = score>80?{en:'Mumtaz',ar:'ممتاز'}:score>55?{en:'Jayyid',ar:'جيّد'}:{en:'Maqbul',ar:'مقبول'};
+  const today= new Date(todayStr()+'T12:00:00');
 
-  let h=`<div class="s-head">
+  // Score ring geometry
+  const R=40, circ=2*Math.PI*R;
+  const offset=(circ*(1-score/100)).toFixed(2);
+  const ringColor= score>80?'var(--green)':score>55?'var(--gold)':'var(--rust)';
+
+  let h = `<div class="s-head">
     <div class="s-kicker">Balance</div>
     <div class="s-title">Mizan <span class="s-title-ar">ميزان</span></div>
     <div class="s-sub">Honest patterns over time</div>
   </div>`;
 
-  h+=`<div class="mizan-hero">
-    <div class="mizan-wk">This week</div>
-    <div class="mizan-quality">${qual.en}</div>
-    <div class="mizan-qar">${qual.ar}</div>
-    <div class="mizan-bars">
-      <div class="mbar"><span class="mbar-lbl">Prayers</span><div class="mbar-track"><div class="mbar-fill" style="width:${ws.prayers}%"></div></div><span class="mbar-pct">${ws.prayers}%</span></div>
-      <div class="mbar"><span class="mbar-lbl">Tasks</span><div class="mbar-track"><div class="mbar-fill" style="width:${ws.tasks}%"></div></div><span class="mbar-pct">${ws.tasks}%</span></div>
-      <div class="mbar"><span class="mbar-lbl">Practices</span><div class="mbar-track"><div class="mbar-fill" style="width:${ws.practices}%"></div></div><span class="mbar-pct">${ws.practices}%</span></div>
+  /* ── SCORE HERO ── */
+  h += `<div class="mz-score-wrap">
+    <div class="mz-ring-col">
+      <svg width="96" height="96" viewBox="0 0 96 96">
+        <circle cx="48" cy="48" r="${R}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="6"/>
+        <circle cx="48" cy="48" r="${R}" fill="none"
+          stroke="${ringColor}" stroke-width="6"
+          stroke-linecap="round"
+          stroke-dasharray="${circ.toFixed(2)}"
+          stroke-dashoffset="${offset}"
+          style="transition:stroke-dashoffset 1.2s var(--ease)"/>
+      </svg>
+      <div class="mz-ring-label">
+        <div class="mz-score-num">${score}</div>
+        <div class="mz-score-pct">/ 100</div>
+      </div>
+    </div>
+    <div class="mz-right">
+      <div class="mz-week-label">This week</div>
+      <div class="mz-quality">${qual.en}</div>
+      <div class="mz-quality-ar">${qual.ar}</div>
+      <div class="mz-pillars">
+        <div class="mz-pillar">
+          <span class="mz-pillar-icon">☽</span>
+          <span class="mz-pillar-name">Prayers</span>
+          <div class="mz-pillar-track"><div class="mz-pillar-fill" style="width:${ws.prayers}%;background:var(--gold)"></div></div>
+          <span class="mz-pillar-val">${ws.prayers}%</span>
+        </div>
+        <div class="mz-pillar">
+          <span class="mz-pillar-icon">✦</span>
+          <span class="mz-pillar-name">Tasks</span>
+          <div class="mz-pillar-track"><div class="mz-pillar-fill" style="width:${ws.tasks}%;background:var(--green)"></div></div>
+          <span class="mz-pillar-val">${ws.tasks}%</span>
+        </div>
+        <div class="mz-pillar">
+          <span class="mz-pillar-icon">◈</span>
+          <span class="mz-pillar-name">Practices</span>
+          <div class="mz-pillar-track"><div class="mz-pillar-fill" style="width:${ws.practices}%;background:var(--blue)"></div></div>
+          <span class="mz-pillar-val">${ws.practices}%</span>
+        </div>
+      </div>
     </div>
   </div>`;
 
-  h+=`<div class="chart-card"><div class="chart-title">Prayer heatmap — 30 days</div><canvas id="c-prayer" height="120"></canvas></div>`;
-  h+=`<div class="chart-card"><div class="chart-title">Mood — 30 days</div><canvas id="c-mood" height="90"></canvas></div>`;
+  /* ── 7-DAY VISUAL CALENDAR ── */
+  h += `<div class="mz-week-strip">`;
+  for(let i=6;i>=0;i--){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split('T')[0];
+    const isToday = ds===todayStr();
+    const isFuture = d > today;
+    const dd = getDayRO(ds);
+    const dayLabel = d.toLocaleDateString('en-US',{weekday:'short'}).slice(0,2);
+    const dayNum   = d.getDate();
 
+    // prayer dots
+    let prayerDots = '';
+    PRAYERS.forEach(p=>{
+      const st = dd?.prayers?.[p.id]?.status||'none';
+      const cls = st==='on_time'?'on':st==='late'?'late':st==='missed'?'miss':'';
+      prayerDots += `<div class="mz-prayer-dot ${cls}" title="${p.en}: ${st}"></div>`;
+    });
+
+    // task count
+    const tasks = dd?.tasks||[];
+    const tdone = tasks.filter(t=>t.done).length;
+    const ttext = tasks.length ? `${tdone}/${tasks.length}` : '';
+    const tdoneClass = tasks.length && tdone===tasks.length ? 'done' : '';
+
+    h += `<div class="mz-day-cell">
+      <div class="mz-day-label">${dayLabel}</div>
+      <div class="mz-day-card ${isToday?'is-today':''} ${isFuture?'is-future':''}">
+        <div class="mz-day-num">${dayNum}</div>
+        <div class="mz-day-prayers">${prayerDots}</div>
+        ${ttext?`<div class="mz-day-tasks ${tdoneClass}">${ttext}</div>`:''}
+      </div>
+    </div>`;
+  }
+  h += `</div>`;
+
+  /* ── PRAYER HEATMAP (30 days) ── */
+  h += `<div class="mz-section">
+    <div class="mz-section-title">Prayer record — 30 days</div>
+    <canvas id="c-prayer" height="110"></canvas>
+  </div>`;
+
+  /* ── PRACTICE STREAKS ── */
   if(DB.practices.length){
-    h+=`<div class="chart-card"><div class="chart-title">Practice streaks</div>`;
+    h += `<div class="mz-section"><div class="mz-section-title">Practice streaks</div>`;
     [...DB.practices].sort((a,b)=>getPracticeStreak(b.id)-getPracticeStreak(a.id)).forEach(p=>{
       const s=getPracticeStreak(p.id), best=getBestStreak(p.id);
       const pct=best>0?Math.round(s/best*100):0;
-      h+=`<div class="streak-row"><span class="streak-emoji">${p.emoji||'⭐'}</span><span class="streak-name">${esc(p.name)}</span>
-        <div style="flex:1;height:4px;background:var(--cream);border-radius:2px;overflow:hidden">
-          <div style="height:100%;background:${p.color};width:${pct}%;border-radius:2px;transition:width 0.6s"></div>
+      h+=`<div class="mz-streak-item">
+        <div class="mz-streak-emoji">${p.emoji||'⭐'}</div>
+        <div class="mz-streak-info">
+          <div class="mz-streak-name">${esc(p.name)}</div>
+          <div class="mz-streak-bar-wrap">
+            <div class="mz-streak-bar" style="width:${pct}%;background:${p.color}"></div>
+          </div>
         </div>
-        <span class="streak-nums">🔥${s} / best ${best}</span>
+        <div class="mz-streak-nums">
+          <div class="mz-streak-current">🔥${s}</div>
+          <div class="mz-streak-best">best ${best}</div>
+        </div>
       </div>`;
     });
-    h+=`</div>`;
+    h += `</div>`;
   }
 
+  /* ── QUOTE ── */
   const q=getDailyQuote();
-  h+=`<div class="letter-card">
-    <div class="letter-label">Quote of the session</div>
-    <div class="letter-body" style="font-size:20px;font-style:italic;line-height:1.75">&ldquo;${esc(q.text)}&rdquo;</div>
-    <div style="margin-top:14px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-family:var(--sans);font-weight:500">${esc(q.source)}</div>
-    <button class="letter-copy" onclick="copyQuote()">Copy</button>
+  h += `<div class="mz-quote">
+    <div class="mz-quote-label">Quote of the day</div>
+    <div class="mz-quote-text">&ldquo;${esc(q.text)}&rdquo;</div>
+    <div class="mz-quote-source">${esc(q.source)}</div>
+    <button class="mz-quote-copy letter-copy" onclick="copyQuote()">Copy</button>
   </div>`;
 
   el.innerHTML=h;
-  setTimeout(()=>{ drawPrayerHeatmap(); drawMoodChart(); },60);
+  setTimeout(()=>{ drawPrayerHeatmap(); },80);
 }
 
 function getWeekStats() {
@@ -2469,7 +2727,7 @@ function getWeekStats() {
   const prayers=pt?Math.round(po/pt*100):0;
   const tasks=tt?Math.round(td/tt*100):0;
   const practices=prt?Math.round(pd/prt*100):0;
-  return { prayers, tasks, practices, score:Math.round((prayers+tasks+practices)/3) };
+  return { prayers, tasks, practices, score:Math.round((prayers*0.4+tasks*0.35+practices*0.25)) };
 }
 function getBestStreak(id) {
   let best=0,cur=0; const t=new Date(todayStr()+'T12:00:00');
@@ -2484,58 +2742,55 @@ function getBestStreak(id) {
 function drawPrayerHeatmap() {
   const c=document.getElementById('c-prayer'); if(!c) return;
   const ctx=c.getContext('2d');
-  const W=c.offsetWidth; c.width=W; c.height=130;
-  ctx.clearRect(0,0,W,130);
-  const isDark=getComputedStyle(document.documentElement).getPropertyValue('--paper').trim().startsWith('#0')||
-               getComputedStyle(document.documentElement).getPropertyValue('--paper').trim().startsWith('#2');
-  const textC=isDark?'#9e9a8e':'#7a7569';
-  const borderC=isDark?'#1e1e2c':'#ede6d8';
-  const cw=(W-36)/30, ch=16;
+  const W=c.offsetWidth; c.width=W; c.height=110;
+  ctx.clearRect(0,0,W,110);
+
+  const styles=getComputedStyle(document.documentElement);
+  const textC =styles.getPropertyValue('--text3').trim()||'#7a7569';
+  const emptyC=styles.getPropertyValue('--border').trim()||'#e8e0d0';
+
+  const labelW=32, gap=2;
+  const cols=30, rows=PRAYERS.length;
+  const cellW=(W-labelW-gap*(cols-1))/cols;
+  const cellH=(110-gap*(rows-1))/rows;
   const today=new Date(todayStr()+'T12:00:00');
-  ctx.font='10px Outfit,sans-serif';
+
+  ctx.font=`10px Outfit,sans-serif`;
   ctx.fillStyle=textC;
-  PRAYERS.forEach((p,i)=>ctx.fillText(p.en.slice(0,3),0,i*ch+ch-3));
-  for(let col=0;col<30;col++){
-    const d=new Date(today); d.setDate(d.getDate()-(29-col));
+  ctx.textBaseline='middle';
+  PRAYERS.forEach((p,i)=>{
+    ctx.fillText(p.en.slice(0,3), 0, i*(cellH+gap)+cellH/2);
+  });
+
+  for(let col=0;col<cols;col++){
+    const d=new Date(today); d.setDate(d.getDate()-(cols-1-col));
     const ds=d.toISOString().split('T')[0];
     const dd=getDayRO(ds);
     PRAYERS.forEach((p,row)=>{
       const st=dd?.prayers?.[p.id]?.status||'none';
-      const x=36+col*cw+1, y=row*ch+2, w=cw-2, h=ch-4;
+      const x=labelW+col*(cellW+gap);
+      const y=row*(cellH+gap);
       ctx.beginPath();
-      if(ctx.roundRect) ctx.roundRect(x,y,w,h,2);
-      else ctx.rect(x,y,w,h);
-      ctx.fillStyle=st==='on_time'?'#b8881c':st==='late'?'#8a6a20':st==='missed'?'#6a3020':borderC;
+      if(ctx.roundRect) ctx.roundRect(x,y,cellW,cellH,2);
+      else ctx.rect(x,y,cellW,cellH);
+      ctx.fillStyle = st==='on_time' ? styles.getPropertyValue('--green').trim()||'#2a5438'
+                    : st==='late'    ? styles.getPropertyValue('--gold').trim()||'#b07818'
+                    : st==='missed'  ? styles.getPropertyValue('--rust').trim()||'#8a3828'
+                    : emptyC;
       ctx.fill();
     });
   }
-}
-function drawMoodChart() {
-  const c=document.getElementById('c-mood'); if(!c) return;
-  const ctx=c.getContext('2d');
-  const W=c.offsetWidth; c.width=W; c.height=90;
-  ctx.clearRect(0,0,W,90);
-  const mIdx={dhayyiq:1,ta_ib:2,mu_tadil:3,murtah:4,farih:5};
-  const today=new Date(todayStr()+'T12:00:00');
-  const pts=[];
-  for(let i=29;i>=0;i--){
-    const d=new Date(today); d.setDate(d.getDate()-i);
-    const ds=d.toISOString().split('T')[0];
-    const dd=getDayRO(ds);
-    const v=dd?.journal?.mood?mIdx[dd.journal.mood]:null;
-    pts.push({x:(29-i)/29*W, y:v?72-(v-1)/4*52:null});
+
+  // column date markers for every 7th day
+  ctx.fillStyle=textC; ctx.font='8px Outfit,sans-serif'; ctx.textBaseline='top';
+  for(let col=0;col<cols;col+=7){
+    const d=new Date(today); d.setDate(d.getDate()-(cols-1-col));
+    const lbl=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const x=labelW+col*(cellW+gap);
+    ctx.fillText(lbl, x, rows*(cellH+gap)+2);
   }
-  const vp=pts.filter(p=>p.y!==null);
-  if(vp.length<2){ ctx.fillStyle='#b0a99a'; ctx.font='13px Outfit,sans-serif'; ctx.fillText('No mood data yet',W/2-60,50); return; }
-  ctx.beginPath(); ctx.strokeStyle='#b8881c'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.lineJoin='round';
-  let first=true;
-  vp.forEach((p,i)=>{
-    if(first){ctx.moveTo(p.x,p.y);first=false;}
-    else{const prev=vp[i-1];const mx=(prev.x+p.x)/2;ctx.bezierCurveTo(mx,prev.y,mx,p.y,p.x,p.y);}
-  });
-  ctx.stroke();
-  vp.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle='#b8881c';ctx.fill();});
 }
+
 
 /* ════════════════════════════════════════════════
    360 ISLAMIC QUOTES
