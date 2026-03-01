@@ -192,6 +192,26 @@ body {
 }
 .ob-ghost:hover { color: var(--ink3); }
 
+.ob-drive-box {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px 20px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+.ob-drive-label {
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--gold); font-weight: 500;
+  margin-bottom: 10px;
+}
+.ob-drive-hint {
+  font-size: 12px; text-align: center; margin-top: 12px;
+}
+.ob-drive-hint a { color: var(--gold); text-decoration: none; }
+.ob-drive-hint a:hover { text-decoration: underline; }
+
 .ob-field {
   width: 100%;
   background: var(--surface);
@@ -2235,77 +2255,26 @@ canvas { width: 100%; display: block; }
 ════════════════════════════════ -->
 <div id="onboarding">
 <div class="ob-wrap">
-
   <div class="ob-step active" id="ob-0">
     <div class="ob-eyebrow">Welcome</div>
     <div class="ob-logo">Raqib</div>
     <span class="ob-logo-ar">رقيب</span>
-    <div class="ob-desc">The watchful one — a daily practice of intentional living. Set your niyyah at dawn, act through the day, give honest account at night.</div>
-    <div class="ob-progress">
-      <div class="ob-pip active"></div>
-      <div class="ob-pip future"></div>
-      <div class="ob-pip future"></div>
-      <div class="ob-pip future"></div>
-    </div>
-    <button class="ob-primary" onclick="obNext()">Begin — بسم الله</button>
-  </div>
+    <div class="ob-desc">Your data lives entirely in your Google Drive — no servers, no accounts. Connect once and your journal syncs across every device automatically.</div>
 
-  <div class="ob-step" id="ob-1">
-    <div class="ob-title">What shall we call you?</div>
-    <div class="ob-sub">Your name will appear in your daily greeting and weekly letter to yourself.</div>
-    <div class="ob-progress">
-      <div class="ob-pip done"></div>
-      <div class="ob-pip active"></div>
-      <div class="ob-pip future"></div>
-      <div class="ob-pip future"></div>
-    </div>
-    <input type="text" class="ob-field" id="ob-name" placeholder="Your name…" maxlength="40" />
-    <button class="ob-primary" onclick="obNext()">Continue</button>
-    <button class="ob-ghost" onclick="obSkip()">Skip</button>
-  </div>
-
-  <div class="ob-step" id="ob-2">
-    <div class="ob-title">Choose your theme</div>
-    <div class="ob-sub">Pick the atmosphere that feels right. You can always change it in settings.</div>
-    <div class="ob-progress">
-      <div class="ob-pip done"></div>
-      <div class="ob-pip done"></div>
-      <div class="ob-pip active"></div>
-      <div class="ob-pip future"></div>
-    </div>
-    <div class="ob-themes">
-      <div class="ob-theme sel" data-t="light" onclick="selectObTheme(this)">
-        <div class="ob-theme-icon">○</div>
-        <div class="ob-theme-name">Ivory</div>
-        <div class="ob-theme-sub">Warm parchment</div>
+    <div class="ob-drive-box" id="ob-drive-box">
+      <div class="ob-drive-label">OAuth Client ID</div>
+      <input type="text" class="ob-field" id="ob-cid"
+        placeholder="…apps.googleusercontent.com"
+        style="font-size:14px;font-family:var(--sans);margin-bottom:16px" />
+      <button class="ob-primary" id="ob-connect-btn" onclick="obConnectDrive()">
+        Connect Google Drive
+      </button>
+      <div class="ob-drive-hint">
+        <a href="https://console.cloud.google.com" target="_blank">Get a Client ID from Google Cloud Console →</a>
       </div>
-      <div class="ob-theme" data-t="dark" onclick="selectObTheme(this)">
-        <div class="ob-theme-icon">◐</div>
-        <div class="ob-theme-name">Night</div>
-        <div class="ob-theme-sub">Deep & calm</div>
-      </div>
-      <div class="ob-theme" data-t="parchment" onclick="selectObTheme(this)">
-        <div class="ob-theme-icon">◑</div>
-        <div class="ob-theme-name">Amber</div>
-        <div class="ob-theme-sub">Warm amber</div>
-      </div>
+      <div id="ob-drive-status" style="min-height:20px;margin-top:12px;font-size:13px;color:var(--gold);text-align:center"></div>
     </div>
-    <button class="ob-primary" onclick="obNext()">Continue</button>
   </div>
-
-  <div class="ob-step" id="ob-3">
-    <div class="ob-title">Your data, your hands</div>
-    <div class="ob-sub">Everything lives in your browser — no accounts, no servers. Optionally connect Google Drive for cross-device backup using your own OAuth Client ID.</div>
-    <div class="ob-progress">
-      <div class="ob-pip done"></div>
-      <div class="ob-pip done"></div>
-      <div class="ob-pip done"></div>
-      <div class="ob-pip active"></div>
-    </div>
-    <button class="ob-primary" onclick="finishOnboarding()">Open Raqib</button>
-    <button class="ob-ghost" onclick="finishOnboarding()">Skip for now</button>
-  </div>
-
 </div>
 </div>
 
@@ -2828,24 +2797,53 @@ function getDayRO(s) { return DB.days[s]||null; }
 /* ════════════════════════════════════════════════
    ONBOARDING
 ════════════════════════════════════════════════ */
-let obStep=0, obTheme='light';
-function obNext() {
-  if(obStep===1){ const n=document.getElementById('ob-name').value.trim(); if(n) DB.profile.name=n; }
-  if(obStep===2){ DB.profile.theme=obTheme; applyTheme(obTheme); }
-  obStep++;
-  if(obStep>=4){ finishOnboarding(); return; }
-  document.querySelectorAll('.ob-step').forEach((e,i)=>e.classList.toggle('active',i===obStep));
-}
-function obSkip() { obStep++; if(obStep>=4){finishOnboarding();return;} document.querySelectorAll('.ob-step').forEach((e,i)=>e.classList.toggle('active',i===obStep)); }
-function selectObTheme(el) {
-  document.querySelectorAll('.ob-theme').forEach(e=>e.classList.remove('sel'));
-  el.classList.add('sel'); obTheme=el.dataset.t; applyTheme(obTheme);
-}
-function finishOnboarding() {
-  DB.onboarded=true; markUnsaved();
-  document.getElementById('onboarding').style.display='none';
-  document.getElementById('app').classList.add('visible');
-  init();
+function applyTheme(t) { document.documentElement.setAttribute('data-theme',t); }/* ════════════════════════════════════════════════
+   ONBOARDING — Drive connect only
+════════════════════════════════════════════════ */
+async function obConnectDrive() {
+  const cid = document.getElementById('ob-cid')?.value.trim();
+  if(!cid) { document.getElementById('ob-drive-status').textContent = 'Please enter your Client ID.'; return; }
+  const btn = document.getElementById('ob-connect-btn');
+  const status = document.getElementById('ob-drive-status');
+  btn.textContent = 'Connecting…'; btn.disabled = true;
+  status.textContent = 'Authorising with Google…';
+  DB.gdrive.clientId = cid;
+  sessionStorage.setItem('raqib_cid', cid);
+  try {
+    await loadGIS();
+    gdriveToken = await new Promise((res,rej) => {
+      const cl = google.accounts.oauth2.initTokenClient({
+        client_id: cid,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: r => r.error ? rej(r.error) : res(r.access_token),
+      });
+      cl.requestAccessToken({prompt:''});
+    });
+    DB.gdrive.connected = true;
+    status.textContent = 'Connected! Loading your data…';
+    // Try to pull existing data from Drive
+    const loaded = await drivePull(true);
+    if(loaded) {
+      status.textContent = 'Data loaded ✓';
+    } else {
+      // First time — no data yet, just mark onboarded and push
+      DB.onboarded = true;
+      await drivePush();
+      status.textContent = 'Drive connected ✓';
+    }
+    setTimeout(() => {
+      document.getElementById('onboarding').style.display = 'none';
+      document.getElementById('app').classList.add('visible');
+      document.getElementById('fab').style.display = 'none';
+      init();
+      setSyncState('ok');
+      // Auto re-auth before token expires
+      setTimeout(() => silentDriveAuth(false), 55 * 60 * 1000);
+    }, 600);
+  } catch(e) {
+    btn.textContent = 'Connect Google Drive'; btn.disabled = false;
+    status.textContent = 'Could not connect: ' + e;
+  }
 }
 function applyTheme(t) { document.documentElement.setAttribute('data-theme',t); }
 
@@ -3468,8 +3466,8 @@ function renderMuhasabah(el) {
       </div>
       ${images.length?`<div class="j-image-grid">
         ${images.map((img,i)=>`
-          <div class="j-image-item" data-ji="${i}" onclick="openJLightbox(${i})">
-            <img src="${img.data}" alt="" loading="lazy" />
+          <div class="j-image-item" data-drive-id="${esc(img.driveId||'')}">
+            <div class="j-img-loading" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;opacity:0.3">⏳</div>
             <button class="j-image-del" onclick="event.stopPropagation();deleteJImg(${i})" title="Remove">✕</button>
           </div>`).join('')}
       </div>`:''}
@@ -3477,6 +3475,24 @@ function renderMuhasabah(el) {
   </div>`;
 
   el.innerHTML=h;
+
+  // Load images from Drive asynchronously after render
+  if(images.length && gdriveToken) {
+    images.forEach((img, i) => {
+      if(!img.driveId) return;
+      getDriveImgUrl(img.driveId).then(url => {
+        if(!url) return;
+        const item = el.querySelector(`.j-image-item[data-drive-id="${img.driveId}"]`);
+        if(!item) return;
+        const loader = item.querySelector('.j-img-loading');
+        if(loader) loader.remove();
+        const imgEl = document.createElement('img');
+        imgEl.src = url; imgEl.alt = img.name || ''; imgEl.loading = 'lazy';
+        imgEl.onclick = () => openJLightbox(img.driveId);
+        item.insertBefore(imgEl, item.firstChild);
+      }).catch(()=>{});
+    });
+  }
 }
 function toggleJ(id) { const el=document.getElementById('js-'+id); el.classList.toggle('collapsed'); el.classList.toggle('open',!el.classList.contains('collapsed')); }
 function saveJ(f,v) { const d=getDay(currentDate); if(!d.journal) d.journal={}; d.journal[f]=v; markUnsaved(); }
@@ -3492,57 +3508,126 @@ function tagKD(e) {
 function removeTag(t) { const d=getDay(currentDate); if(!d.journal?.tags) return; d.journal.tags=d.journal.tags.filter(x=>x!==t); markUnsaved(); renderSection(); }
 
 /* ── Journal images ── */
+/* ── Journal images — stored in Drive Images/Raqib/ ── */
+
+async function getOrCreateImgFolder() {
+  if(_imgFolderId) return _imgFolderId;
+  if(!gdriveToken) throw new Error('Not connected to Drive');
+  // Check if Images/Raqib folder already exists
+  const search = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=name='Raqib' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id)`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  const sd = await search.json();
+  if(sd.files?.[0]?.id) { _imgFolderId = sd.files[0].id; return _imgFolderId; }
+
+  // Create it
+  const create = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + gdriveToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Raqib', mimeType: 'application/vnd.google-apps.folder' }),
+  });
+  const folder = await create.json();
+  _imgFolderId = folder.id;
+  return _imgFolderId;
+}
+
 function toggleJImgZone() { document.getElementById('j-img-zone')?.classList.toggle('collapsed'); }
 
 function jImgPick(e) {
   const files = Array.from(e.target.files);
-  files.forEach(f => readJImg(f));
-  e.target.value = ''; // reset so same file can be re-added
+  files.forEach(f => uploadJImg(f));
+  e.target.value = '';
 }
 function jDropOver(e) { e.preventDefault(); document.getElementById('j-drop-zone')?.classList.add('drag-over'); }
 function jDropLeave(e) { document.getElementById('j-drop-zone')?.classList.remove('drag-over'); }
 function jDropDrop(e) {
   e.preventDefault();
   document.getElementById('j-drop-zone')?.classList.remove('drag-over');
-  Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(readJImg);
+  Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(uploadJImg);
 }
 
-function readJImg(file) {
+async function uploadJImg(file) {
   if(!file.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
+  if(!gdriveToken) { alert('Connect to Google Drive first.'); return; }
+
+  // Show uploading state in the drop zone
+  const drop = document.getElementById('j-drop-zone');
+  const origText = drop?.querySelector('.j-image-drop-text')?.textContent;
+  if(drop?.querySelector('.j-image-drop-text')) drop.querySelector('.j-image-drop-text').textContent = `Uploading ${file.name}…`;
+
+  try {
+    const folderId = await getOrCreateImgFolder();
+    const metadata = { name: file.name, parents: [folderId] };
+    const fm = new FormData();
+    fm.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    fm.append('file', file);
+    const res = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
+      { method: 'POST', headers: { Authorization: 'Bearer ' + gdriveToken }, body: fm }
+    );
+    if(!res.ok) throw new Error('Upload failed: ' + res.status);
+    const uploaded = await res.json();
+
+    // Store only the Drive file ID + name in the journal
     const d = getDay(currentDate);
     if(!d.journal) d.journal = {};
     if(!d.journal.images) d.journal.images = [];
-    d.journal.images.push({ data: ev.target.result, name: file.name, addedAt: new Date().toISOString() });
+    d.journal.images.push({ driveId: uploaded.id, name: uploaded.name, addedAt: new Date().toISOString() });
     markUnsaved();
     renderSection();
-  };
-  reader.readAsDataURL(file);
+  } catch(e) {
+    alert('Image upload failed: ' + e.message);
+    if(drop?.querySelector('.j-image-drop-text') && origText)
+      drop.querySelector('.j-image-drop-text').textContent = origText;
+  }
 }
 
-function deleteJImg(idx) {
+// Get a short-lived display URL for a Drive image
+async function getDriveImgUrl(driveId) {
+  if(!gdriveToken) return null;
+  // Use the Drive thumbnail/content endpoint — returns blob URL
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${driveId}?alt=media`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  if(!res.ok) return null;
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+async function deleteJImg(idx) {
   const d = getDay(currentDate);
   if(!d.journal?.images) return;
   if(!confirm('Remove this photo?')) return;
+  const img = d.journal.images[idx];
+  // Delete from Drive too
+  if(img.driveId && gdriveToken) {
+    try {
+      await fetch(`https://www.googleapis.com/drive/v3/files/${img.driveId}`,
+        { method: 'DELETE', headers: { Authorization: 'Bearer ' + gdriveToken } });
+    } catch(e) {}
+  }
   d.journal.images.splice(idx, 1);
   markUnsaved();
   renderSection();
 }
 
-function openJLightbox(idx) {
-  const d = getDay(currentDate);
-  const img = d.journal?.images?.[idx];
-  if(!img) return;
+async function openJLightbox(driveId) {
   const lb = document.getElementById('j-lightbox');
   const imgEl = document.getElementById('j-lightbox-img');
   if(!lb || !imgEl) return;
-  imgEl.src = img.data;
+  imgEl.src = '';
   lb.classList.add('open');
   document.body.style.overflow = 'hidden';
+  const url = await getDriveImgUrl(driveId);
+  if(url) imgEl.src = url;
 }
 function closeJLightbox() {
-  document.getElementById('j-lightbox')?.classList.remove('open');
+  const lb = document.getElementById('j-lightbox');
+  const imgEl = document.getElementById('j-lightbox-img');
+  if(imgEl?.src?.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
+  lb?.classList.remove('open');
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => {
@@ -4269,6 +4354,7 @@ function buildDrivePayload() {
 }
 
 let _driveFileId = null; // cache so we don't list every push
+let _imgFolderId = null; // cache for Images/Raqib folder
 
 async function findDriveFile() {
   if(_driveFileId) return _driveFileId;
@@ -4340,6 +4426,7 @@ function driveDisconnect() {
   gdriveToken = null;
   DB.gdrive.connected = false;
   _driveFileId = null;
+  _imgFolderId = null;
   sessionStorage.removeItem('raqib_cid');
   if(syncDebounce) clearTimeout(syncDebounce);
   setSyncState('offline');
@@ -4356,36 +4443,44 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
    BOOT — Drive-only, no local storage
 ════════════════════════════════════════════════ */
 (async function boot() {
-  // If we have a stored Client ID in the URL hash or a previous in-memory hint,
-  // try silent auth first so the user doesn't have to re-enter it every refresh.
-  // Client ID is the only thing we keep — in sessionStorage ONLY as a UX hint
-  // (not as real data storage — just so the user doesn't lose their Client ID field on F5).
+  // Restore Client ID from sessionStorage (survives page refresh, not new tab)
   const storedCid = sessionStorage.getItem('raqib_cid');
   if(storedCid) DB.gdrive.clientId = storedCid;
 
   if(DB.gdrive.clientId) {
-    // Try silent Drive auth and load data
+    // Show a loading state while we auth + pull
+    document.getElementById('onboarding').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    document.getElementById('fab').style.display = 'none';
+    // Render a loading indicator
+    document.getElementById('section-content').innerHTML =
+      `<div style="text-align:center;padding:80px 20px;color:var(--text3);font-family:var(--serif);font-style:italic;font-size:18px">
+        Loading from Drive…
+       </div>`;
+
     await silentDriveAuth(false);
     if(gdriveToken) {
-      const loaded = await drivePull(true); // silent pull
+      const loaded = await drivePull(true);
       if(loaded) {
-        document.getElementById('onboarding').style.display='none';
-        document.getElementById('app').classList.add('visible');
         init();
         setSyncState('ok');
-        document.getElementById('fab').style.display='none';
+        setTimeout(() => silentDriveAuth(false), 55 * 60 * 1000);
         return;
       }
     }
+    // Auth failed silently — show onboarding with CID pre-filled so user can re-auth
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('onboarding').style.display = '';
+    if(storedCid) {
+      const cidInput = document.getElementById('ob-cid');
+      if(cidInput) cidInput.value = storedCid;
+      document.getElementById('ob-drive-status').textContent = 'Re-authorise to load your data.';
+    }
+    return;
   }
 
-  // No Drive connection or no data — show onboarding or app based on flag
-  if(DB.onboarded){
-    document.getElementById('onboarding').style.display='none';
-    document.getElementById('app').classList.add('visible');
-    init();
-  }
-  document.getElementById('fab').style.display='none';
+  // No Client ID at all — show onboarding
+  document.getElementById('fab').style.display = 'none';
   setSyncState('offline');
 })();
 </script>
