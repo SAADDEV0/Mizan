@@ -16,7 +16,7 @@
   --ink3:     #7a7569;
   --ink4:     #b0a99a;
   --paper:    #f7f3ec;
-  --paper2:   #f0ead e;
+  --paper2:   #f0eade;
   --cream:    #ede6d8;
   --gold:     #b8881c;
   --gold2:    #d4a832;
@@ -1424,6 +1424,36 @@ canvas { width: 100%; display: block; }
 [data-theme="dark"] .wday-bubble { background: #1e1e2c; }
 [data-theme="dark"] .tag-pill { background: #1e1e2c; border-color: #2a2a3a; }
 [data-theme="dark"] .tags-zone { border: 1px solid #2a2a3a; }
+/* ---- dark: additional overrides ---- */
+[data-theme="dark"] .deferred-section { background: #1a1a28; border: 1px solid #2a2a3a; }
+[data-theme="dark"] .deferred-head { color: var(--ink3); }
+[data-theme="dark"] .card-header { border-bottom-color: #2a2a3a; }
+[data-theme="dark"] .block-count { background: #0f0f14; color: var(--ink4); }
+[data-theme="dark"] .hero-today-pill { background: var(--ink); color: var(--paper); }
+[data-theme="dark"] .hero-today-pill:hover { background: var(--gold); }
+[data-theme="dark"] .task-row { border-bottom-color: #2a2a3a; }
+[data-theme="dark"] .task-cb { background: #1a1a28; border-color: #2a2a3a; }
+[data-theme="dark"] .j-header:hover { background: #1e1e2c; }
+[data-theme="dark"] .j-body { border-top-color: #2a2a3a; }
+[data-theme="dark"] .p-expand { border-top-color: #2a2a3a; }
+[data-theme="dark"] .p-status-btn { background: #1a1a28; border-color: #2a2a3a; }
+[data-theme="dark"] .section-rule { border-color: #2a2a3a; }
+[data-theme="dark"] .letter-copy { background: #1a1a28; border-color: #2a2a3a; color: var(--ink3); }
+[data-theme="dark"] .add-ghost { border-color: #2a2a3a; color: var(--ink4); }
+[data-theme="dark"] .add-ghost:hover { border-color: var(--gold); color: var(--gold); }
+[data-theme="dark"] .th-btn { color: var(--ink3); border-color: #2a2a3a; }
+[data-theme="dark"] .settings-close { background: #1a1a28; border-color: #2a2a3a; }
+[data-theme="dark"] #hero { border-bottom-color: #2a2a3a; }
+[data-theme="dark"] .s-head { border-bottom-color: #2a2a3a; }
+[data-theme="dark"] .streak-row { border-bottom-color: #2a2a3a; }
+[data-theme="dark"] .prayer-line { background: linear-gradient(to bottom, transparent, #2a2a3a 10%, #2a2a3a 90%, transparent); }
+[data-theme="dark"] .prayer-dot { background: #1a1a28; border-color: #2a2a3a; }
+[data-theme="dark"] .prac-check { background: #1a1a28; border-color: #2a2a3a; }
+[data-theme="dark"] .mood-btn.sel { background: #1e1e2a; }
+[data-theme="dark"] .wday-label { color: var(--ink4); }
+[data-theme="dark"] .fc { background: #1a1a28 !important; border-color: #2a2a3a !important; }
+[data-theme="dark"] .fc.on { background: var(--ink) !important; border-color: var(--ink) !important; }
+[data-theme="dark"] .prio-btn { background: #1a1a28 !important; border-color: #2a2a3a !important; }
 
 /* ──────────────────────────────────────────────
    PARCHMENT THEME
@@ -2106,7 +2136,7 @@ function renderAmal(el) {
         </svg>
         <div class="wird-ring-num">${cnt}<span>/${w.target}</span></div>
       </div>
-      <div class="wird-tap ${complete?'done':''}" onclick="incrWird('${w.id}')">＋</div>
+      <div class="wird-tap ${complete?'done':''}" data-wid="${w.id}" onclick="incrWird('${w.id}')">＋</div>
     </div>`;
   });
   h+=`<button class="add-ghost" onclick="openAddWird()"><span>＋</span> Add wird</button>`;
@@ -2118,7 +2148,33 @@ function togglePractice(id) { const d=getDay(currentDate); if(!d.practicesDone) 
 function delPractice(id) { if(!confirm('Remove this practice?')) return; DB.practices=DB.practices.filter(p=>p.id!==id); markUnsaved(); renderSection(); }
 function getPracticeStreak(id) { let s=0; const t=new Date(currentDate+'T12:00:00'); for(let i=0;i<365;i++){const d=new Date(t);d.setDate(d.getDate()-i);const ds=d.toISOString().split('T')[0];const dd=getDayRO(ds);if(dd?.practicesDone?.[id]) s++;else if(i>0) break;} return s; }
 function get28Day(id) { const r=[]; const t=new Date(currentDate+'T12:00:00'); for(let i=27;i>=0;i--){const d=new Date(t);d.setDate(d.getDate()-i);const ds=d.toISOString().split('T')[0];r.push(!!(getDayRO(ds)?.practicesDone?.[id]));} return r; }
-function incrWird(id) { const d=getDay(currentDate); if(!d.wirdCounts) d.wirdCounts={}; const w=DB.wird.find(x=>x.id===id); if(!w) return; d.wirdCounts[id]=Math.min((d.wirdCounts[id]||0)+1,w.target); markUnsaved(); renderSection(); }
+function incrWird(id) {
+  const d=getDay(currentDate); if(!d.wirdCounts) d.wirdCounts={};
+  const w=DB.wird.find(x=>x.id===id); if(!w) return;
+  const prev=d.wirdCounts[id]||0;
+  if(prev>=w.target) return;
+  const cnt=prev+1;
+  d.wirdCounts[id]=cnt;
+  markUnsaved();
+  // In-place DOM update — no full re-render
+  const tapBtn=document.querySelector(`.wird-tap[data-wid="${id}"]`);
+  if(!tapBtn) return;
+  const card=tapBtn.closest('.wird-card');
+  const pct=Math.min(cnt/w.target,1);
+  const R=22, circ=2*Math.PI*R;
+  const offset=(circ*(1-pct)).toFixed(1);
+  const complete=cnt>=w.target;
+  const progCircle=card.querySelector('.wird-ring svg circle:nth-child(2)');
+  if(progCircle){
+    progCircle.setAttribute('stroke-dashoffset',offset);
+    progCircle.setAttribute('stroke',complete?'var(--green)':'var(--gold)');
+  }
+  const numEl=card.querySelector('.wird-ring-num');
+  if(numEl) numEl.innerHTML=cnt+'<span>/'+w.target+'</span>';
+  tapBtn.classList.toggle('done',complete);
+  tapBtn.style.transform='scale(0.88)';
+  setTimeout(()=>{ tapBtn.style.transform=''; },150);
+}
 
 function openAddPractice() {
   const emojiGrid=EMOJIS.map((e,i)=>`<div class="eg-opt ${i===0?'sel':''}" onclick="selEmoji(this)">${e}</div>`).join('');
@@ -2719,13 +2775,39 @@ function startAutoSync() {
   if(syncTimer) clearInterval(syncTimer);
   syncTimer=setInterval(()=>{ if(unsaved&&gdriveToken&&DB.gdrive.connected) drivePush(); },10000);
 }
+function buildDrivePayload() {
+  // Organised, versioned JSON structure for Google Drive backup
+  return {
+    _meta: {
+      version: 2,
+      app: 'raqib',
+      exportedAt: new Date().toISOString(),
+      device: navigator.userAgent.split(')')[0].split('(')[1]||'unknown',
+    },
+    profile: DB.profile,
+    practices: DB.practices,
+    wird: DB.wird,
+    days: Object.fromEntries(
+      Object.entries(DB.days).map(([date, day]) => [date, {
+        niyyah:   day.niyyah   || '',
+        tasks:    day.tasks    || [],
+        prayers:  day.prayers  || {},
+        wirdCounts: day.wirdCounts || {},
+        practicesDone: day.practicesDone || {},
+        journal:  day.journal  || {},
+      }])
+    ),
+    gdrive: { clientId: DB.gdrive.clientId, lastSync: DB.gdrive.lastSync },
+  };
+}
 async function drivePush() {
   if(!gdriveToken) return;
   try {
     const fid=await findDriveFile();
+    const payload=buildDrivePayload();
     const fm=new FormData();
     fm.append('metadata',new Blob([JSON.stringify({name:'raqib-data.json'})],{type:'application/json'}));
-    fm.append('file',new Blob([JSON.stringify(DB)],{type:'application/json'}));
+    fm.append('file',new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
     const url=fid?`https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=multipart`:'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     await fetch(url,{method:fid?'PATCH':'POST',headers:{Authorization:'Bearer '+gdriveToken},body:fm});
     DB.gdrive.lastSync=new Date().toISOString(); markUnsaved();
@@ -2736,7 +2818,19 @@ async function drivePull() {
   try {
     const fid=await findDriveFile(); if(!fid){alert('No backup found.');return;}
     const data=await (await fetch(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`,{headers:{Authorization:'Bearer '+gdriveToken}})).json();
-    DB={...DB,...data}; markUnsaved(); closeSettings(); init();
+    // Handle both versioned (v2) and legacy payloads
+    if(data._meta?.version>=2) {
+      DB.profile  = {...DB.profile, ...data.profile};
+      DB.practices= data.practices||DB.practices;
+      DB.wird     = data.wird||DB.wird;
+      DB.days     = data.days||DB.days;
+      if(data.gdrive?.clientId) DB.gdrive.clientId=data.gdrive.clientId;
+      if(data.gdrive?.lastSync) DB.gdrive.lastSync=data.gdrive.lastSync;
+    } else {
+      // Legacy flat format
+      DB={...DB,...data};
+    }
+    markUnsaved(); closeSettings(); init();
   } catch(e){alert('Pull failed: '+e);}
 }
 async function findDriveFile() {
