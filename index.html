@@ -476,46 +476,107 @@ body {
 }
 .niyyah-input::placeholder { color: rgba(247,243,236,0.3); }
 
-.blocks-grid { display: flex; flex-direction: column; gap: 8px; }
-
-.block-card {
+/* ──────────────────────────────────────────────
+   TIME BLOCKS TIMELINE
+────────────────────────────────────────────── */
+.timeline-wrap {
+  position: relative;
+}
+.timeline-spine {
+  position: absolute;
+  left: 26px; top: 20px; bottom: 20px;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, var(--cream) 8%, var(--cream) 92%, transparent);
+  z-index: 0;
+}
+.tblock {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 6px;
+  z-index: 1;
+}
+.tblock-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 54px;
+  padding-top: 16px;
+}
+.tblock-dot {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--cream);
+  background: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s var(--ease-spring);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+.tblock-dot.has-tasks {
+  border-color: var(--block-color, var(--gold));
+  background: color-mix(in srgb, var(--block-color, var(--gold)) 10%, white);
+}
+.tblock-dot.all-done {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+.tblock-time-label {
+  font-size: 9px;
+  color: var(--ink4);
+  letter-spacing: 0.3px;
+  margin-top: 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+.tblock-card {
+  flex: 1;
   background: white;
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: box-shadow 0.2s;
+  border-left: 3px solid var(--block-color, var(--cream));
+  min-width: 0;
 }
-.block-card:hover { box-shadow: var(--shadow-md); }
+.tblock-card:hover { box-shadow: var(--shadow-md); }
 
-.block-header {
+.tblock-header {
   display: flex; align-items: center; gap: 10px;
-  padding: 14px 18px;
+  padding: 13px 16px;
   cursor: pointer;
   user-select: none;
 }
-.block-stripe {
-  width: 4px; height: 24px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.block-name {
+.tblock-name {
   font-weight: 500; font-size: 14px; flex: 1;
 }
-.block-ar { font-family: var(--serif); font-size: 14px; color: var(--ink3); }
-.block-count {
-  font-size: 12px;
+.tblock-ar {
+  font-family: var(--serif); font-size: 14px; color: var(--ink3);
+}
+.tblock-badge {
+  font-size: 11px;
   color: var(--ink4);
   background: var(--paper);
-  padding: 3px 10px;
+  padding: 2px 9px;
   border-radius: 20px;
 }
-.block-caret {
+.tblock-badge.done-all {
+  background: var(--green-bg);
+  color: var(--green);
+}
+.tblock-caret {
   color: var(--ink4); font-size: 11px;
   transition: transform 0.2s var(--ease);
 }
-.block-card.collapsed .block-caret { transform: rotate(-90deg); }
-.block-card.collapsed .block-body { display: none; }
+.tblock-card.collapsed .tblock-caret { transform: rotate(-90deg); }
+.tblock-card.collapsed .tblock-body { display: none; }
+.tblock-body { padding: 0 16px 10px; }
 
+/* legacy aliases so task-rows still work */
+.block-card { }
 .block-body { padding: 0 18px 12px; }
 
 .task-row {
@@ -1454,6 +1515,10 @@ canvas { width: 100%; display: block; }
 [data-theme="dark"] .fc { background: #1a1a28 !important; border-color: #2a2a3a !important; }
 [data-theme="dark"] .fc.on { background: var(--ink) !important; border-color: var(--ink) !important; }
 [data-theme="dark"] .prio-btn { background: #1a1a28 !important; border-color: #2a2a3a !important; }
+[data-theme="dark"] .tblock-card { background: #1a1a28; }
+[data-theme="dark"] .tblock-dot { background: #1a1a28; border-color: #2a2a3a; }
+[data-theme="dark"] .tblock-badge { background: #0f0f14; color: var(--ink4); }
+[data-theme="dark"] .timeline-spine { background: linear-gradient(to bottom, transparent, #2a2a3a 8%, #2a2a3a 92%, transparent); }
 
 /* ──────────────────────────────────────────────
    PARCHMENT THEME
@@ -1492,6 +1557,9 @@ canvas { width: 100%; display: block; }
 [data-theme="parchment"] .modal-box,
 [data-theme="parchment"] .settings-drawer,
 [data-theme="parchment"] .bs-panel { background: #2a2318; }
+[data-theme="parchment"] .tblock-card { background: #382f22; }
+[data-theme="parchment"] .tblock-dot { background: #382f22; border-color: var(--cream); }
+[data-theme="parchment"] .tblock-badge { background: #2a2318; color: var(--ink4); }
 
 /* ──────────────────────────────────────────────
    RESPONSIVE
@@ -1651,11 +1719,11 @@ const NAV = [
   { id:'mizan',     en:'Mizan',     ar:'ميزان',   icon:'⚖' },
 ];
 const BLOCKS = [
-  { id:'fajr',  en:'Fajr',  ar:'فجر',  color:'#7a9ec8', note:'Before sunrise' },
-  { id:'sabah', en:'Sabah', ar:'صباح', color:'#c89e5c', note:'Morning' },
-  { id:'duha',  en:'Duha',  ar:'ضحى',  color:'#8faa5c', note:'Late morning' },
-  { id:'asr',   en:'Asr',   ar:'عصر',  color:'#9a7ac8', note:'Afternoon' },
-  { id:'masa',  en:'Masa',  ar:'مساء', color:'#5c8aaa', note:'Evening' },
+  { id:'dawn',      en:'Dawn',      ar:'الفجر',  color:'#7a9ec8', icon:'🌅', time:'4–6 AM',  note:'Early morning focus' },
+  { id:'morning',   en:'Morning',   ar:'الصباح', color:'#c8a55c', icon:'☀️',  time:'7–11 AM', note:'Peak productivity' },
+  { id:'afternoon', en:'Afternoon', ar:'الظهر',  color:'#8faa5c', icon:'🌤', time:'12–3 PM', note:'Midday energy' },
+  { id:'evening',   en:'Evening',   ar:'العصر',  color:'#9a7ac8', icon:'🌆', time:'4–7 PM',  note:'Wind down' },
+  { id:'night',     en:'Night',     ar:'العشاء', color:'#5c7aaa', icon:'🌙', time:'8–11 PM', note:'Reflection & rest' },
 ];
 const PRAYERS = [
   { id:'fajr',    en:'Fajr',    ar:'الفجر' },
@@ -1843,6 +1911,12 @@ function renderNiyyah(el) {
   const day = getDay(currentDate);
   const greet = DB.profile.name ? `الله يبارك فيك، ${DB.profile.name}` : 'بسم الله';
 
+  // Progress bar across all blocks
+  const allTasks  = day.tasks || [];
+  const totalDone = allTasks.filter(t=>t.done).length;
+  const totalAll  = allTasks.length;
+  const pct       = totalAll > 0 ? Math.round(totalDone/totalAll*100) : 0;
+
   let h = `<div class="s-head">
     <div class="s-kicker">Intention</div>
     <div class="s-title">Niyyah <span class="s-title-ar">نيّة</span></div>
@@ -1856,22 +1930,50 @@ function renderNiyyah(el) {
       placeholder="Today I will…">${esc(day.niyyah||'')}</textarea>
   </div>`;
 
-  // Task blocks
-  h += `<div class="blocks-grid">`;
-  BLOCKS.forEach(b => {
-    const tasks = (day.tasks||[]).filter(t=>t.block===b.id);
-    const done  = tasks.filter(t=>t.done).length;
-    h += `<div class="block-card" id="bc-${b.id}">
-      <div class="block-header" onclick="toggleBlock('${b.id}')">
-        <div class="block-stripe" style="background:${b.color}"></div>
-        <span class="block-name">${b.en}</span>
-        <span class="block-ar">${b.ar}</span>
-        <span class="block-count">${done}/${tasks.length}</span>
-        <span class="block-caret">▾</span>
+  // Day progress summary
+  if(totalAll > 0) {
+    h += `<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px 16px;background:white;border-radius:var(--radius);box-shadow:var(--shadow-sm)">
+      <div style="flex:1">
+        <div style="height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${pct===100?'var(--green)':'var(--gold)'};border-radius:3px;transition:width 0.5s var(--ease)"></div>
+        </div>
       </div>
-      <div class="block-body">`;
-    if(!tasks.length) { h+=`<div class="empty-state">Empty — tap ＋ to add</div>`; }
-    else {
+      <div style="font-size:12px;font-weight:500;color:${pct===100?'var(--green)':'var(--ink3)'}; white-space:nowrap">${totalDone}/${totalAll} done</div>
+    </div>`;
+  }
+
+  // Timeline
+  h += `<div class="timeline-wrap"><div class="timeline-spine"></div>`;
+  BLOCKS.forEach(b => {
+    const tasks   = allTasks.filter(t=>t.block===b.id);
+    const done    = tasks.filter(t=>t.done).length;
+    const hasTasks = tasks.length > 0;
+    const allDone = hasTasks && done === tasks.length;
+    const dotClass = allDone ? 'all-done' : hasTasks ? 'has-tasks' : '';
+    const badgeClass = allDone ? 'done-all' : '';
+    const badgeText = hasTasks ? (allDone ? '✓ done' : `${done}/${tasks.length}`) : 'empty';
+
+    h += `<div class="tblock">
+      <div class="tblock-dot-col">
+        <div class="tblock-dot ${dotClass}" style="--block-color:${b.color}">
+          ${allDone ? '✓' : b.icon}
+        </div>
+        <div class="tblock-time-label">${b.time}</div>
+      </div>
+      <div class="tblock-card" id="bc-${b.id}" style="--block-color:${b.color}">
+        <div class="tblock-header" onclick="toggleBlock('${b.id}')">
+          <span class="tblock-name">${b.en}</span>
+          <span class="tblock-ar">${b.ar}</span>
+          <span class="tblock-badge ${badgeClass}">${badgeText}</span>
+          <span class="tblock-caret">▾</span>
+        </div>
+        <div class="tblock-body">`;
+
+    if(!tasks.length) {
+      h += `<div class="empty-state" style="padding:10px 0 14px">
+        <span style="font-size:12px">No tasks — tap ＋ to plan your ${b.en.toLowerCase()}</span>
+      </div>`;
+    } else {
       [...tasks].sort((a,b)=>(a.done?1:0)-(b.done?1:0)).forEach(t=>{
         const pc = {low:'#2d5a3d',medium:'#b8881c',urgent:'#8b3a2a'}[t.priority||'medium'];
         h+=`<div class="task-row ${t.done?'done':''}" id="tr-${t.id}">
@@ -1886,13 +1988,13 @@ function renderNiyyah(el) {
         </div>`;
       });
     }
-    h+=`</div></div>`;
+    h += `</div></div></div>`;
   });
-  h+=`</div>`;
+  h += `</div>`;
 
   const deferred = getDeferredTasks();
   if(deferred.length) {
-    h+=`<div class="deferred-section"><div class="deferred-head" onclick="toggleDeferred()">
+    h+=`<div class="deferred-section" style="margin-top:16px"><div class="deferred-head" onclick="toggleDeferred()">
       ↩ Carried forward (${deferred.length}) <span id="def-tog" style="margin-left:auto">▾</span>
     </div><div id="def-body">`;
     deferred.forEach(t=>{
@@ -1958,9 +2060,9 @@ function openAddTask() {
       <input type="text" class="fi" id="ti-name" placeholder="What needs doing?" /></div>
     <div class="fg"><label class="fl">Note</label>
       <input type="text" class="fi" id="ti-note" placeholder="Optional detail…" /></div>
-    <div class="fg"><label class="fl">Time block</label>
+    <div class="fg"><label class="fl">Time of day</label>
       <select class="fi" id="ti-block">
-        ${BLOCKS.map(b=>`<option value="${b.id}">${b.en} — ${b.ar}</option>`).join('')}
+        ${BLOCKS.map(b=>`<option value="${b.id}">${b.icon} ${b.en} · ${b.time}</option>`).join('')}
       </select></div>
     <div class="fg"><label class="fl">Priority</label>
       <div class="prio-row">
