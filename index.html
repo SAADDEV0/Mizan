@@ -2537,20 +2537,21 @@ function markUnsaved() {
    POMODORO / FOCUS ENGINE
 ════════════════════════════════════════════════ */
 let focusState = {
-  taskId:       null,
-  taskName:     '',
-  taskNote:     '',
-  running:      false,
-  phase:        'focus',      // 'focus' | 'break' | 'long_break'
-  session:      1,
-  totalSessions:4,
-  focusDur:     25 * 60,      // seconds
-  breakDur:     5  * 60,
-  longBreakDur: 15 * 60,
-  remaining:    25 * 60,
-  elapsed:      0,            // total focused seconds this session
-  intervalId:   null,
-  startTs:      null,         // wall-clock when timer started
+  taskId:           null,
+  taskName:         '',
+  taskNote:         '',
+  running:          false,
+  phase:            'focus',
+  session:          1,
+  totalSessions:    4,
+  focusDur:         25 * 60,
+  breakDur:         5  * 60,
+  longBreakDur:     15 * 60,
+  remaining:        25 * 60,
+  snapshotRemaining:25 * 60,  // remaining at last ▶ press — used for wall-clock calc
+  elapsed:          0,
+  intervalId:       null,
+  startTs:          null,
 };
 
 function openFocusMode(taskId) {
@@ -2574,6 +2575,7 @@ function openFocusMode(taskId) {
   // load durations from selects
   focusUpdateDurations(false);
   focusState.remaining = focusState.focusDur;
+  focusState.snapshotRemaining = focusState.focusDur;
 
   document.getElementById('focus-task-name').textContent = task.name;
   document.getElementById('focus-task-note').textContent = task.note||'';
@@ -2625,60 +2627,77 @@ function focusToggle() {
 
 function focusStart() {
   if(focusState.running) return;
-  // Clear any lingering interval just in case
   if(focusState.intervalId) { clearInterval(focusState.intervalId); focusState.intervalId = null; }
   focusState.running = true;
+  // Store wall-clock start: remaining seconds from NOW
   focusState.startTs = Date.now();
+  focusState.snapshotRemaining = focusState.remaining; // remaining at the moment ▶ was pressed
   const playBtn = document.getElementById('focus-play-btn');
   if(playBtn) playBtn.textContent = '⏸';
-  focusState.intervalId = setInterval(focusTick, 1000);
+  focusState.intervalId = setInterval(focusTick, 250); // 250ms for smooth display
 }
 
 function focusPause() {
   if(!focusState.running) return;
   focusState.running = false;
   clearInterval(focusState.intervalId);
+  focusState.intervalId = null;
   document.getElementById('focus-play-btn').textContent = '▶';
-  // accumulate elapsed only during focus phase
-  if(focusState.phase==='focus' && focusState.startTs) {
-    focusState.elapsed += Math.round((Date.now()-focusState.startTs)/1000);
+  // Freeze remaining at the wall-clock-accurate value
+  if(focusState.startTs) {
+    const elapsed = Math.floor((Date.now() - focusState.startTs) / 1000);
+    focusState.remaining = Math.max(0, focusState.snapshotRemaining - elapsed);
+    // Accumulate focused time
+    if(focusState.phase === 'focus') {
+      focusState.elapsed += elapsed;
+    }
     focusState.startTs = null;
   }
 }
 
 function focusTick() {
-  focusState.remaining--;
-  if(focusState.phase==='focus') {
-    // live elapsed tracking for UI
-  }
+  if(!focusState.startTs) return;
+  const elapsed = Math.floor((Date.now() - focusState.startTs) / 1000);
+  const newRemaining = Math.max(0, focusState.snapshotRemaining - elapsed);
+  focusState.remaining = newRemaining;
   focusUpdateDisplay();
-  if(focusState.remaining <= 0) focusAdvance();
+  if(newRemaining <= 0) focusAdvance();
 }
 
+// Catch up immediately when tab becomes visible again
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && focusState.running && focusState.startTs) {
+    focusTick(); // instant catch-up on tab return
+  }
+});
+
 function focusAdvance() {
-  focusPause();
-  // save focused time if we just finished a focus phase
+  // Calculate final elapsed from wall clock before pausing
+  if(focusState.running && focusState.startTs && focusState.phase === 'focus') {
+    const secs = Math.floor((Date.now() - focusState.startTs) / 1000);
+    focusState.elapsed += secs;
+  }
+  focusPause(); // this also accumulates, so we zero startTs first to avoid double-count
+  focusState.startTs = null; // already counted above
+
   if(focusState.phase==='focus') {
-    focusState.elapsed += focusState.focusDur; // full session completed
     focusSaveTime();
     focusState.elapsed = 0;
-    // vibrate
     if(navigator.vibrate) navigator.vibrate([200,100,200]);
 
-    // Check if ALL sessions are now done
     if(focusState.session >= focusState.totalSessions) {
-      // Show completion screen
       focusShowComplete();
       return;
     } else {
       focusState.phase = 'break';
       focusState.remaining = focusState.breakDur;
+      focusState.snapshotRemaining = focusState.breakDur;
     }
     focusState.session = Math.min(focusState.session+1, focusState.totalSessions+1);
   } else {
-    // break finished → back to focus
     focusState.phase = 'focus';
     focusState.remaining = focusState.focusDur;
+    focusState.snapshotRemaining = focusState.focusDur;
     focusState.session = Math.min(focusState.session+1, focusState.totalSessions+1);
   }
   focusRenderDots();
@@ -2724,10 +2743,12 @@ function focusSkip() {
 
 function focusReset() {
   focusPause();
-  focusState.phase     = 'focus';
-  focusState.session   = 1;
-  focusState.remaining = focusState.focusDur;
-  focusState.elapsed   = 0;
+  focusState.phase             = 'focus';
+  focusState.session           = 1;
+  focusState.remaining         = focusState.focusDur;
+  focusState.snapshotRemaining = focusState.focusDur;
+  focusState.elapsed           = 0;
+  focusState.startTs           = null;
   document.getElementById('focus-play-btn').classList.remove('break-mode');
   focusRenderDots();
   focusUpdateDisplay();
