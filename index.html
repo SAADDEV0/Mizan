@@ -1271,28 +1271,155 @@ textarea.fi { resize: vertical; min-height: 80px; }
 .sj-drop-text { font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--ink3); }
 .sj-drop-sub  { font-size: 11px; color: var(--ink4); margin-top: 4px; }
 
-/* image lightbox */
-#j-lightbox {
-  display: none;
-  position: fixed; inset: 0; z-index: 2000;
-  background: rgba(10,9,8,0.92);
-  align-items: center; justify-content: center;
+/* ── Sijjil mode toggle ── */
+.sj-mode-row {
+  display: flex; gap: 6px;
+  margin-bottom: 28px;
+  background: var(--surface);
+  border-radius: 50px;
+  padding: 4px;
+  box-shadow: var(--shadow-sm);
+  width: fit-content;
+}
+.sj-mode-btn {
+  padding: 7px 20px;
+  border-radius: 50px;
+  border: none;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 12px; font-weight: 500;
+  color: var(--text3);
   cursor: pointer;
+  transition: all 0.2s var(--ease);
+  letter-spacing: 0.3px;
 }
-#j-lightbox.open { display: flex; animation: fadeIn 0.2s; }
-#j-lightbox img {
-  max-width: 90vw; max-height: 88vh;
+.sj-mode-btn.active {
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Time Machine ── */
+.tm-wrap { padding-bottom: 32px; }
+
+.tm-month-block { margin-bottom: 40px; }
+
+.tm-month-label {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.tm-month-label::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* horizontal scroll strip per month */
+.tm-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.tm-strip::-webkit-scrollbar { height: 3px; }
+.tm-strip::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* individual day card */
+.tm-card {
+  flex-shrink: 0;
+  width: 160px;
   border-radius: var(--radius);
-  box-shadow: 0 8px 48px rgba(0,0,0,0.5);
-  cursor: default;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s;
+  position: relative;
 }
-#j-lightbox-close {
-  position: absolute; top: 20px; right: 24px;
-  color: rgba(255,255,255,0.6); font-size: 28px;
-  cursor: pointer; background: none; border: none;
-  transition: color 0.15s;
+.tm-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.tm-card.is-today { box-shadow: 0 0 0 2px var(--gold), var(--shadow-sm); }
+
+/* photo area */
+.tm-card-img {
+  width: 100%; height: 120px;
+  position: relative;
+  background: var(--surface2);
+  overflow: hidden;
 }
-#j-lightbox-close:hover { color: white; }
+.tm-card-img img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  transition: transform 0.3s var(--ease);
+}
+.tm-card:hover .tm-card-img img { transform: scale(1.04); }
+.tm-card-img-count {
+  position: absolute; bottom: 6px; right: 6px;
+  background: rgba(10,9,8,0.65);
+  color: rgba(255,255,255,0.9);
+  font-size: 10px; font-weight: 500;
+  padding: 2px 7px; border-radius: 20px;
+  backdrop-filter: blur(4px);
+}
+.tm-card-img-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; opacity: 0.15;
+}
+
+/* text area */
+.tm-card-body {
+  padding: 10px 12px 12px;
+}
+.tm-card-date {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.tm-card-snippet {
+  font-family: var(--serif);
+  font-size: 12px;
+  color: var(--text3);
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tm-card-tags {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  margin-top: 6px;
+}
+.tm-card-tag {
+  font-size: 9px;
+  padding: 2px 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text4);
+}
+
+/* empty state */
+.tm-empty {
+  text-align: center;
+  padding: 60px 20px;
+}
+.tm-empty-icon { font-size: 40px; opacity: 0.25; margin-bottom: 16px; }
+.tm-empty-text {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--text3);
+  line-height: 1.65;
+}
 
 /* image lightbox */
 #j-lightbox {
@@ -2508,6 +2635,7 @@ let DB = {
 let currentSection = 'niyyah';
 let mizanPeriod = 'today'; // 'today' | '7d' | '30d' | '365d'
 let currentDate = todayStr();
+let sijjilMode = 'write'; // 'write' | 'memories'
 let gdriveToken = null;
 let syncDebounce = null;
 let syncState = 'idle'; // 'idle' | 'syncing' | 'ok' | 'error' | 'offline'
@@ -3485,85 +3613,99 @@ function submitWird() {
 function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
 
 /* ════════════════════════════════════════════════
-   SIJJIL — Free daily journal
+   SIJJIL — Free daily journal + Time Machine
 ════════════════════════════════════════════════ */
 function renderMuhasabah(el) {
+  // Mode toggle header — always shown
+  const d = new Date(currentDate+'T12:00:00');
+  const dateLabel = d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric', year:'numeric'});
+
+  let h = `<div class="s-head">
+    <div class="s-kicker">Journal</div>
+    <div class="s-title">Sijjil <span class="s-title-ar">سجلّ</span></div>
+    <div class="s-sub" style="font-family:var(--serif);font-style:italic">Write your day. Revisit your story.</div>
+  </div>`;
+
+  h += `<div class="sj-mode-row">
+    <button class="sj-mode-btn ${sijjilMode==='write'?'active':''}" onclick="setSijjilMode('write')">✎ Write</button>
+    <button class="sj-mode-btn ${sijjilMode==='memories'?'active':''}" onclick="setSijjilMode('memories')">✦ Memories</button>
+  </div>`;
+
+  el.innerHTML = h;
+
+  if(sijjilMode === 'write') {
+    renderSijjilWrite(el, dateLabel);
+  } else {
+    renderTimeMachine(el);
+  }
+}
+
+function setSijjilMode(mode) { sijjilMode = mode; renderSection(); }
+
+/* ── Write mode ── */
+function renderSijjilWrite(el, dateLabel) {
   const day = getDay(currentDate);
   if(!day.journal) day.journal = { text:'', tags:[], images:[] };
-  // migrate old multi-field journal to single text field
   if(day.journal.free !== undefined && !day.journal.text) {
     day.journal.text = [day.journal.shukr||'', day.journal.amal||'', day.journal.azm||'', day.journal.free||''].filter(Boolean).join('\n\n');
   }
   const j = day.journal;
   const images = j.images || [];
-
-  const d = new Date(currentDate+'T12:00:00');
-  const dateLabel = d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric', year:'numeric'});
   const wordCount = (j.text||'').trim().split(/\s+/).filter(Boolean).length;
 
-  let h = `<div class="s-head">
-    <div class="s-kicker">Journal</div>
-    <div class="s-title">Sijjil <span class="s-title-ar">سجلّ</span></div>
-    <div class="s-sub" style="font-family:var(--serif);font-style:italic">Write your day.</div>
-  </div>`;
+  const wrap = document.createElement('div');
 
-  h += `<div class="sj-datestamp">${dateLabel}</div>`;
+  wrap.innerHTML = `
+    <div class="sj-datestamp">${dateLabel}</div>
 
-  // Main writing area
-  h += `<div class="sj-body-wrap">
-    <textarea class="sj-ta" id="sj-ta" rows="10"
-      oninput="sjSave(this.value)"
-      placeholder="What happened today…">${esc(j.text||'')}</textarea>
-    <div class="sj-word-count" id="sj-wc">${wordCount} words</div>
-  </div>`;
-
-  // Tags
-  h += `<div class="sj-tags-zone">
-    ${(j.tags||[]).map(t=>`<div class="sj-tag-pill">${esc(t)}<span class="sj-tag-x" onclick="sjRemoveTag('${esc(t)}')">✕</span></div>`).join('')}
-    <input type="text" class="sj-tag-input" placeholder="+ tag…" onkeydown="sjTagKD(event)" />
-    <span class="sj-tag-hint">Enter to add</span>
-  </div>`;
-
-  // Gallery
-  h += `<div class="sj-gallery-wrap">
-    <div class="sj-gallery-header">
-      <span class="sj-gallery-label">
-        Photos
-        ${images.length ? `<span class="sj-gallery-count">${images.length}</span>` : ''}
-      </span>
-      <button class="sj-add-btn">
-        📷 Add photo
-        <input type="file" accept="image/*" multiple onchange="sjImgPick(event)" />
-      </button>
+    <div class="sj-body-wrap">
+      <textarea class="sj-ta" id="sj-ta" rows="10"
+        oninput="sjSave(this.value)"
+        placeholder="What happened today…">${esc(j.text||'')}</textarea>
+      <div class="sj-word-count" id="sj-wc">${wordCount} words</div>
     </div>
-    <div class="sj-gallery-body">`;
 
-  if(images.length) {
-    h += `<div class="sj-grid" id="sj-grid">
-      ${images.map((img,i) => `
-        <div class="sj-gitem" data-drive-id="${esc(img.driveId||'')}" onclick="openJLightbox('${esc(img.driveId||'')}')">
-          <div class="sj-gitem-loader">🖼</div>
-          <button class="sj-gitem-del" onclick="event.stopPropagation();sjDeleteImg(${i})" title="Remove">✕</button>
-        </div>`).join('')}
+    <div class="sj-tags-zone">
+      ${(j.tags||[]).map(t=>`<div class="sj-tag-pill">${esc(t)}<span class="sj-tag-x" onclick="sjRemoveTag('${esc(t)}')">✕</span></div>`).join('')}
+      <input type="text" class="sj-tag-input" placeholder="+ tag…" onkeydown="sjTagKD(event)" />
+      <span class="sj-tag-hint">Enter to add</span>
+    </div>
+
+    <div class="sj-gallery-wrap">
+      <div class="sj-gallery-header">
+        <span class="sj-gallery-label">
+          Photos ${images.length ? `<span class="sj-gallery-count">${images.length}</span>` : ''}
+        </span>
+        <button class="sj-add-btn">
+          📷 Add photo
+          <input type="file" accept="image/*" multiple onchange="sjImgPick(event)" />
+        </button>
+      </div>
+      <div class="sj-gallery-body">
+        ${images.length
+          ? `<div class="sj-grid" id="sj-grid">
+              ${images.map((img,i) => `
+                <div class="sj-gitem" data-drive-id="${esc(img.driveId||'')}" onclick="openJLightbox('${esc(img.driveId||'')}')">
+                  <div class="sj-gitem-loader">🖼</div>
+                  <button class="sj-gitem-del" onclick="event.stopPropagation();sjDeleteImg(${i})" title="Remove">✕</button>
+                </div>`).join('')}
+             </div>`
+          : `<div class="sj-drop" id="sj-drop"
+               ondragover="sjDropOver(event)" ondragleave="sjDropLeave(event)" ondrop="sjDropDrop(event)">
+               <div class="sj-drop-icon">🖼</div>
+               <div class="sj-drop-text">Add photos to this entry</div>
+               <div class="sj-drop-sub">Click to browse or drag &amp; drop</div>
+               <input type="file" accept="image/*" multiple onchange="sjImgPick(event)" />
+             </div>`
+        }
+      </div>
     </div>`;
-  } else {
-    h += `<div class="sj-drop" id="sj-drop"
-      ondragover="sjDropOver(event)" ondragleave="sjDropLeave(event)" ondrop="sjDropDrop(event)">
-      <div class="sj-drop-icon">🖼</div>
-      <div class="sj-drop-text">Add photos to this entry</div>
-      <div class="sj-drop-sub">Click to browse or drag &amp; drop</div>
-      <input type="file" accept="image/*" multiple onchange="sjImgPick(event)" />
-    </div>`;
-  }
 
-  h += `</div></div>`;
-  el.innerHTML = h;
+  el.appendChild(wrap);
 
-  // Auto-resize textarea
   const ta = document.getElementById('sj-ta');
-  if(ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+  if(ta) { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
 
-  // Load images async
   if(images.length && gdriveToken) {
     images.forEach(img => {
       if(!img.driveId) return;
@@ -3573,11 +3715,111 @@ function renderMuhasabah(el) {
         if(!item) return;
         item.querySelector('.sj-gitem-loader')?.remove();
         const imgEl = document.createElement('img');
-        imgEl.src = url; imgEl.alt = img.name||''; imgEl.loading = 'lazy';
+        imgEl.src = url; imgEl.alt = img.name||''; imgEl.loading='lazy';
         item.insertBefore(imgEl, item.firstChild);
       }).catch(()=>{});
     });
   }
+}
+
+/* ── Time Machine ── */
+function renderTimeMachine(el) {
+  // Gather all days that have journal content or images, sorted newest first
+  const allDates = Object.keys(DB.days)
+    .filter(ds => {
+      const j = DB.days[ds]?.journal;
+      return j && (j.text?.trim() || (j.images && j.images.length > 0) || (j.free?.trim()));
+    })
+    .sort((a,b) => b.localeCompare(a));
+
+  const wrap = document.createElement('div');
+  wrap.className = 'tm-wrap';
+
+  if(!allDates.length) {
+    wrap.innerHTML = `<div class="tm-empty">
+      <div class="tm-empty-icon">📖</div>
+      <div class="tm-empty-text">Your journal is empty.<br>Start writing today — this will become your time machine.</div>
+    </div>`;
+    el.appendChild(wrap);
+    return;
+  }
+
+  // Group by month
+  const byMonth = {};
+  allDates.forEach(ds => {
+    const [y, m] = ds.split('-');
+    const key = `${y}-${m}`;
+    if(!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(ds);
+  });
+
+  // Render month by month
+  Object.entries(byMonth).forEach(([monthKey, dates]) => {
+    const [y, m] = monthKey.split('-');
+    const monthLabel = new Date(`${y}-${m}-01T12:00:00`).toLocaleDateString('en-US',{month:'long', year:'numeric'});
+
+    const block = document.createElement('div');
+    block.className = 'tm-month-block';
+
+    let html = `<div class="tm-month-label">${monthLabel}</div><div class="tm-strip">`;
+
+    dates.forEach(ds => {
+      const day = DB.days[ds];
+      const j = day?.journal || {};
+      const images = j.images || [];
+      const text = j.text || j.free || '';
+      const tags = j.tags || [];
+      const d = new Date(ds+'T12:00:00');
+      const dayLabel = d.toLocaleDateString('en-US',{weekday:'short', day:'numeric'});
+      const isToday = ds === todayStr();
+
+      const snippet = text.trim().slice(0, 80) + (text.trim().length > 80 ? '…' : '');
+
+      html += `<div class="tm-card ${isToday?'is-today':''}" onclick="tmGoDay('${ds}')">
+        <div class="tm-card-img" id="tmc-${ds}">
+          ${images.length
+            ? `<div class="sj-gitem-loader" style="opacity:0.15">🖼</div>
+               ${images.length > 1 ? `<div class="tm-card-img-count">+${images.length}</div>` : ''}`
+            : `<div class="tm-card-img-placeholder">📝</div>`
+          }
+        </div>
+        <div class="tm-card-body">
+          <div class="tm-card-date">${dayLabel}</div>
+          ${snippet ? `<div class="tm-card-snippet">${esc(snippet)}</div>` : ''}
+          ${tags.length ? `<div class="tm-card-tags">${tags.slice(0,3).map(t=>`<span class="tm-card-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+    block.innerHTML = html;
+    wrap.appendChild(block);
+
+    // Load first image of each card async
+    if(gdriveToken) {
+      dates.forEach(ds => {
+        const j = DB.days[ds]?.journal;
+        const img = j?.images?.[0];
+        if(!img?.driveId) return;
+        getDriveImgUrl(img.driveId).then(url => {
+          if(!url) return;
+          const container = document.getElementById(`tmc-${ds}`);
+          if(!container) return;
+          container.innerHTML = `<img src="${url}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" />
+            ${(j.images.length > 1) ? `<div class="tm-card-img-count">+${j.images.length}</div>` : ''}`;
+        }).catch(()=>{});
+      });
+    }
+  });
+
+  el.appendChild(wrap);
+}
+
+function tmGoDay(dateStr) {
+  currentDate = dateStr;
+  sijjilMode = 'write';
+  renderHero();
+  renderSection();
 }
 
 function sjSave(v) {
