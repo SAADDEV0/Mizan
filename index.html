@@ -1179,29 +1179,192 @@ textarea.fi { resize: vertical; min-height: 80px; }
 }
 .tag-hint { font-size: 11px; color: var(--ink4); font-style: italic; align-self: center; }
 
-/* ── Journal image upload ── */
-.j-image-zone {
-  margin-top: 16px;
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
+/* ── Sijjil / Muhasabah — Editorial diary redesign ── */
+.sijjil-date-stamp {
+  font-family: var(--serif);
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 32px;
+  display: flex; align-items: center; gap: 14px;
 }
-.j-image-header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 16px;
-  cursor: pointer;
-  user-select: none;
+.sijjil-date-stamp::before, .sijjil-date-stamp::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.sijjil-entry-block {
+  margin-bottom: 40px;
+}
+.sijjil-prompt-line {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--gold);
+  margin-bottom: 10px;
+  opacity: 0.85;
+}
+.sijjil-label {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-bottom: 8px;
+}
+.sijjil-label-en {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.sijjil-label-ar {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--gold);
+  opacity: 0.7;
+}
+.sijjil-ta {
+  width: 100%;
+  background: transparent;
+  border: none;
   border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
+  color: var(--text);
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.75;
+  padding: 8px 0 16px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+  min-height: 90px;
 }
-.j-image-header:hover { background: var(--surface2); }
-.j-image-icon { font-size: 16px; }
-.j-image-title { font-size: 14px; font-weight: 500; flex: 1; }
-.j-image-toggle { color: var(--ink4); font-size: 11px; transition: transform 0.2s; }
-.j-image-zone.collapsed .j-image-toggle { transform: rotate(-90deg); }
-.j-image-zone.collapsed .j-image-body { display: none; }
-.j-image-body { padding: 16px; }
+.sijjil-ta:focus { border-bottom-color: var(--gold); }
+.sijjil-ta::placeholder { color: var(--text4); font-style: italic; }
+.sijjil-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 8px 0 36px;
+  opacity: 0.5;
+}
+
+/* Gallery */
+.sijjil-gallery-section {
+  margin-top: 36px;
+}
+.sijjil-gallery-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.sijjil-gallery-title {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--text3); font-weight: 600;
+}
+.sijjil-add-photo-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.sijjil-add-photo-btn:hover { border-color: var(--gold); color: var(--gold); }
+.sijjil-add-photo-btn input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+/* gallery grid — masonry-ish feel with varying sizes */
+.sijjil-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 110px;
+  gap: 6px;
+}
+.sijjil-gallery-grid .gal-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+.sijjil-gallery-grid .gal-item:nth-child(4) { grid-column: span 2; }
+.gal-item {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface2);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.gal-item:hover { transform: scale(1.015); box-shadow: var(--shadow-md); }
+.gal-item img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+.gal-item-loading {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; opacity: 0.25;
+}
+.gal-item-del {
+  position: absolute; top: 6px; right: 6px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: rgba(10,9,8,0.72);
+  border: none; cursor: pointer;
+  color: rgba(255,255,255,0.85);
+  font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.15s;
+  backdrop-filter: blur(4px);
+}
+.gal-item:hover .gal-item-del { opacity: 1; }
+
+.sijjil-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.sijjil-drop-zone:hover, .sijjil-drop-zone.drag-over {
+  border-color: var(--gold); background: var(--gold-glow);
+}
+.sijjil-drop-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.sijjil-drop-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.35; }
+.sijjil-drop-text { font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--text3); }
+.sijjil-drop-sub { font-size: 11px; color: var(--text4); margin-top: 4px; }
+
+/* tags */
+.sijjil-tags-row {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.sijjil-tag-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px; color: var(--text3);
+}
+.sijjil-tag-x { cursor: pointer; font-size: 10px; opacity: 0.6; transition: opacity 0.15s; }
+.sijjil-tag-x:hover { opacity: 1; color: var(--rust); }
+.sijjil-tag-input {
+  border: none; outline: none;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 12px; color: var(--text);
+  min-width: 80px;
+}
+.sijjil-tag-hint { font-size: 11px; color: var(--text4); font-style: italic; }
+
+/* ── Journal image upload (legacy kept for lightbox) ── */
 .j-image-drop {
   border: 2px dashed var(--border);
   border-radius: var(--radius-sm);
@@ -1215,45 +1378,9 @@ textarea.fi { resize: vertical; min-height: 80px; }
   border-color: var(--gold);
   background: var(--gold-glow);
 }
-.j-image-drop-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
-.j-image-drop-text { font-size: 13px; color: var(--ink3); }
-.j-image-drop-sub { font-size: 11px; color: var(--ink4); margin-top: 4px; }
 .j-image-drop input[type=file] {
   position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
 }
-.j-image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-}
-.j-image-item {
-  position: relative;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  aspect-ratio: 1;
-  background: var(--surface2);
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-.j-image-item:hover { transform: scale(1.02); }
-.j-image-item img {
-  width: 100%; height: 100%;
-  object-fit: cover; display: block;
-}
-.j-image-del {
-  position: absolute; top: 5px; right: 5px;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: rgba(20,18,14,0.7);
-  border: none; cursor: pointer;
-  color: rgba(255,255,255,0.8);
-  font-size: 10px;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.15s;
-}
-.j-image-item:hover .j-image-del { opacity: 1; }
 
 /* image lightbox */
 #j-lightbox {
@@ -2423,7 +2550,7 @@ const NAV = [
   { id:'niyyah',    en:'Niyyah',    ar:'نيّة',    icon:'✦' },
   { id:'salat',     en:'Salat',     ar:'صلاة',    icon:'☽' },
   { id:'amal',      en:'Amal',      ar:'عمل',     icon:'◈' },
-  { id:'muhasabah', en:'Muhasabah', ar:'محاسبة',  icon:'✎' },
+  { id:'muhasabah', en:'Sijjil', ar:'سجلّ',  icon:'✎' },
   { id:'mizan',     en:'Mizan',     ar:'ميزان',   icon:'⚖' },
 ];
 const BLOCKS = [
@@ -2502,6 +2629,8 @@ function markUnsaved() {
   // Hard guard: never push until Drive data has been loaded (or confirmed absent)
   if(!driveReady) return;
   if(!gdriveToken || !DB.gdrive.connected) { setSyncState('offline'); return; }
+  // Track which day is being modified
+  markDayDirty(currentDate);
   setSyncState('syncing');
   clearTimeout(syncDebounce);
   syncDebounce = setTimeout(async () => {
@@ -2864,16 +2993,21 @@ async function obConnectDrive() {
 
     status.textContent = 'Connected! Checking Drive for your data…';
 
-    // Always pull first — NEVER push during connect
-    const loaded = await drivePull(true);
-    if(loaded) {
-      driveReady = true; // existing data loaded — safe to write
-      status.textContent = 'Your data loaded ✓';
+    // Check for old flat file and migrate, otherwise pull new structure
+    const migrated = await migrateOldData();
+    if(!migrated) {
+      const loaded = await drivePull(true);
+      if(loaded) {
+        driveReady = true;
+        status.textContent = 'Your data loaded ✓';
+      } else {
+        driveReady = true;
+        DB.onboarded = true;
+        status.textContent = 'Drive connected ✓ — ready to use';
+      }
     } else {
-      // Genuinely no file on Drive yet — first time ever
-      driveReady = true; // confirmed new account — safe to write on first user action
-      DB.onboarded = true;
-      status.textContent = 'Drive connected ✓ — ready to use';
+      driveReady = true;
+      status.textContent = 'Data migrated to new structure ✓';
     }
 
     setTimeout(() => {
@@ -3442,7 +3576,7 @@ function submitWird() {
 function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
 
 /* ════════════════════════════════════════════════
-   MUHASABAH
+   MUHASABAH — Editorial diary redesign
 ════════════════════════════════════════════════ */
 function renderMuhasabah(el) {
   const day=getDay(currentDate);
@@ -3454,90 +3588,95 @@ function renderMuhasabah(el) {
   const shukrP = allOnTime ? "What felt easy and blessed today?" : "What are you grateful for today?";
   const amalP  = deferred>0 ? "What got in the way today?" : "What did you do well? Where did you fall short?";
 
+  const d = new Date(currentDate+'T12:00:00');
+  const dateLabel = d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric', year:'numeric'});
+
   let h=`<div class="s-head">
     <div class="s-kicker">Reflection</div>
-    <div class="s-title">Muhasabah <span class="s-title-ar">محاسبة</span></div>
+    <div class="s-title">Sijjil <span class="s-title-ar">سجلّ</span></div>
     <div class="s-sub" style="font-family:var(--serif);font-style:italic">"Call yourself to account before you are called to account."</div>
   </div>`;
 
+  h += `<div class="sijjil-date-stamp">${dateLabel}</div>`;
+
   const jsecs=[
-    {id:'shukr',icon:'✨',en:'Shukr',ar:'شكر',prompt:shukrP,field:'shukr'},
-    {id:'amal', icon:'🔍',en:'Amal', ar:'عمل',prompt:amalP, field:'amal'},
-    {id:'azm',  icon:'⚡',en:'Azm',  ar:'عزم',prompt:'What will you do differently tomorrow?',field:'azm'},
-    {id:'free', icon:'✍',en:'Free', ar:'حرّ',prompt:'Write freely…',field:'free'},
+    {en:'Shukr',ar:'شكر',prompt:shukrP,field:'shukr'},
+    {en:'Amal', ar:'عمل',prompt:amalP, field:'amal'},
+    {en:'Azm',  ar:'عزم',prompt:'What will you do differently tomorrow?',field:'azm'},
+    {en:'Free', ar:'حرّ',prompt:'Write freely…',field:'free'},
   ];
-  jsecs.forEach(s=>{
-    h+=`<div class="j-section" id="js-${s.id}">
-      <div class="j-header" onclick="toggleJ('${s.id}')">
-        <span class="j-icon">${s.icon}</span>
-        <span class="j-name">${s.en}</span>
-        <span class="j-ar">${s.ar}</span>
-        <span class="j-toggle">▾</span>
+
+  jsecs.forEach((s,i)=>{
+    h+=`<div class="sijjil-entry-block">
+      <div class="sijjil-label">
+        <span class="sijjil-label-en">${s.en}</span>
+        <span class="sijjil-label-ar">${s.ar}</span>
       </div>
-      <div class="j-body">
-        <div class="j-prompt">${s.prompt}</div>
-        <textarea class="j-ta" id="jt-${s.field}"
-          oninput="saveJ('${s.field}',this.value)"
-          placeholder="…">${esc(j[s.field]||'')}</textarea>
-      </div>
+      <div class="sijjil-prompt-line">${s.prompt}</div>
+      <textarea class="sijjil-ta" id="jt-${s.field}" rows="3"
+        oninput="saveJ('${s.field}',this.value)"
+        placeholder="…">${esc(j[s.field]||'')}</textarea>
     </div>`;
+    if(i < jsecs.length-1) h += `<hr class="sijjil-divider" />`;
   });
 
   // Tags
-  h+=`<div class="tags-zone">
-    ${(j.tags||[]).map(t=>`<div class="tag-pill">${esc(t)}<span class="tag-x" onclick="removeTag('${esc(t)}')">✕</span></div>`).join('')}
-    <input type="text" class="tag-input-inline" placeholder="Add tag…" onkeydown="tagKD(event)" />
-    <span class="tag-hint">Enter to add</span>
+  h+=`<div class="sijjil-tags-row">
+    ${(j.tags||[]).map(t=>`<div class="sijjil-tag-pill">${esc(t)}<span class="sijjil-tag-x" onclick="removeTag('${esc(t)}')">✕</span></div>`).join('')}
+    <input type="text" class="sijjil-tag-input" placeholder="+ tag…" onkeydown="tagKD(event)" />
+    <span class="sijjil-tag-hint">Enter to add</span>
   </div>`;
 
-  // Image upload
+  // Gallery
   const images = j.images||[];
-  h+=`<div class="j-image-zone" id="j-img-zone">
-    <div class="j-image-header" onclick="toggleJImgZone()">
-      <span class="j-image-icon">📷</span>
-      <span class="j-image-title">Photos &amp; Reflections</span>
-      ${images.length?`<span style="font-size:11px;color:var(--gold);background:var(--gold-glow);padding:2px 8px;border-radius:20px">${images.length}</span>`:''}
-      <span class="j-image-toggle">▾</span>
-    </div>
-    <div class="j-image-body">
-      <div class="j-image-drop" id="j-drop-zone"
-        ondragover="jDropOver(event)" ondragleave="jDropLeave(event)" ondrop="jDropDrop(event)">
-        <div class="j-image-drop-icon">🖼</div>
-        <div class="j-image-drop-text">Add a photo to your reflection</div>
-        <div class="j-image-drop-sub">Click to browse or drag &amp; drop · PNG, JPG, WEBP</div>
+  h+=`<div class="sijjil-gallery-section">
+    <div class="sijjil-gallery-header">
+      <span class="sijjil-gallery-title">Moments &amp; Photos${images.length?` · <span style="color:var(--gold)">${images.length}</span>`:''}</span>
+      <button class="sijjil-add-photo-btn">
+        📷 Add photo
         <input type="file" accept="image/*" multiple onchange="jImgPick(event)" />
-      </div>
-      ${images.length?`<div class="j-image-grid">
-        ${images.map((img,i)=>`
-          <div class="j-image-item" data-drive-id="${esc(img.driveId||'')}">
-            <div class="j-img-loading" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px;opacity:0.3">⏳</div>
-            <button class="j-image-del" onclick="event.stopPropagation();deleteJImg(${i})" title="Remove">✕</button>
-          </div>`).join('')}
-      </div>`:''}
-    </div>
-  </div>`;
+      </button>
+    </div>`;
+
+  if(images.length) {
+    h+=`<div class="sijjil-gallery-grid" id="sijjil-grid">
+      ${images.map((img,i)=>`
+        <div class="gal-item" data-drive-id="${esc(img.driveId||'')}" onclick="openJLightbox('${esc(img.driveId||'')}')">
+          <div class="gal-item-loading">🖼</div>
+          <button class="gal-item-del" onclick="event.stopPropagation();deleteJImg(${i})" title="Remove">✕</button>
+        </div>`).join('')}
+    </div>`;
+  } else {
+    h+=`<div class="sijjil-drop-zone" id="j-drop-zone"
+      ondragover="jDropOver(event)" ondragleave="jDropLeave(event)" ondrop="jDropDrop(event)">
+      <div class="sijjil-drop-icon">🖼</div>
+      <div class="sijjil-drop-text">Add a photo to this entry</div>
+      <div class="sijjil-drop-sub">Click to browse or drag &amp; drop · PNG, JPG, WEBP</div>
+      <input type="file" accept="image/*" multiple onchange="jImgPick(event)" />
+    </div>`;
+  }
+  h+=`</div>`;
 
   el.innerHTML=h;
 
   // Load images from Drive asynchronously after render
   if(images.length && gdriveToken) {
-    images.forEach((img, i) => {
+    images.forEach((img) => {
       if(!img.driveId) return;
       getDriveImgUrl(img.driveId).then(url => {
         if(!url) return;
-        const item = el.querySelector(`.j-image-item[data-drive-id="${img.driveId}"]`);
+        const item = el.querySelector(`.gal-item[data-drive-id="${img.driveId}"]`);
         if(!item) return;
-        const loader = item.querySelector('.j-img-loading');
+        const loader = item.querySelector('.gal-item-loading');
         if(loader) loader.remove();
         const imgEl = document.createElement('img');
         imgEl.src = url; imgEl.alt = img.name || ''; imgEl.loading = 'lazy';
-        imgEl.onclick = () => openJLightbox(img.driveId);
         item.insertBefore(imgEl, item.firstChild);
       }).catch(()=>{});
     });
   }
 }
-function toggleJ(id) { const el=document.getElementById('js-'+id); el.classList.toggle('collapsed'); el.classList.toggle('open',!el.classList.contains('collapsed')); }
+
 function saveJ(f,v) { const d=getDay(currentDate); if(!d.journal) d.journal={}; d.journal[f]=v; markUnsaved(); }
 function tagKD(e) {
   if(e.key==='Enter'||e.key===','){
@@ -3550,34 +3689,52 @@ function tagKD(e) {
 }
 function removeTag(t) { const d=getDay(currentDate); if(!d.journal?.tags) return; d.journal.tags=d.journal.tags.filter(x=>x!==t); markUnsaved(); renderSection(); }
 
-/* ── Journal images ── */
-/* ── Journal images — stored in Drive Images/Raqib/ ── */
+/* ── Journal images — stored in Raqib/YYYY/YYYY-MM/YYYY-MM-DD/Images/ ── */
 
-async function getOrCreateImgFolder() {
-  if(_imgFolderId) return _imgFolderId;
+// Cache: date string → folderId
+const _dayImgFolderCache = {};
+
+async function getOrCreateDayImgFolder(dateStr) {
+  if(_dayImgFolderCache[dateStr]) return _dayImgFolderCache[dateStr];
   if(!gdriveToken) throw new Error('Not connected to Drive');
-  const search = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='Raqib' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id)`,
-    { headers: { Authorization: 'Bearer ' + gdriveToken } }
-  );
-  const sd = await search.json();
-  if(sd.files?.[0]?.id) {
-    _imgFolderId = sd.files[0].id;
-    sessionStorage.setItem('raqib_imgfid', _imgFolderId);
-    return _imgFolderId;
-  }
-  const create = await fetch('https://www.googleapis.com/drive/v3/files', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + gdriveToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'Raqib', mimeType: 'application/vnd.google-apps.folder' }),
-  });
-  const folder = await create.json();
-  _imgFolderId = folder.id;
-  sessionStorage.setItem('raqib_imgfid', _imgFolderId);
-  return _imgFolderId;
-}
 
-function toggleJImgZone() { document.getElementById('j-img-zone')?.classList.toggle('collapsed'); }
+  const [year, month] = dateStr.split('-'); // e.g. ['2026','03','10']
+  const monthStr = `${year}-${month}`;
+  const dayFolderName = dateStr;
+  const imgFolderName = 'Images';
+
+  // Helper: find or create a folder inside a parent
+  async function findOrCreate(name, parentId) {
+    const q = parentId
+      ? `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`
+      : `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+    const r = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,
+      { headers: { Authorization: 'Bearer ' + gdriveToken } }
+    );
+    const data = await r.json();
+    if(data.files?.[0]?.id) return data.files[0].id;
+    const meta = { name, mimeType: 'application/vnd.google-apps.folder' };
+    if(parentId) meta.parents = [parentId];
+    const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + gdriveToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(meta),
+    });
+    const folder = await cr.json();
+    return folder.id;
+  }
+
+  // Raqib → year → month → day → Images
+  const rootId   = await findOrCreate('Raqib', null);
+  const yearId   = await findOrCreate(year, rootId);
+  const monthId  = await findOrCreate(monthStr, yearId);
+  const dayId    = await findOrCreate(dayFolderName, monthId);
+  const imgId    = await findOrCreate(imgFolderName, dayId);
+
+  _dayImgFolderCache[dateStr] = imgId;
+  return imgId;
+}
 
 function jImgPick(e) {
   const files = Array.from(e.target.files);
@@ -3596,13 +3753,12 @@ async function uploadJImg(file) {
   if(!file.type.startsWith('image/')) return;
   if(!gdriveToken) { alert('Connect to Google Drive first.'); return; }
 
-  // Show uploading state in the drop zone
-  const drop = document.getElementById('j-drop-zone');
-  const origText = drop?.querySelector('.j-image-drop-text')?.textContent;
-  if(drop?.querySelector('.j-image-drop-text')) drop.querySelector('.j-image-drop-text').textContent = `Uploading ${file.name}…`;
+  // Show uploading feedback
+  const dropText = document.querySelector('.sijjil-drop-text');
+  if(dropText) dropText.textContent = `Uploading ${file.name}…`;
 
   try {
-    const folderId = await getOrCreateImgFolder();
+    const folderId = await getOrCreateDayImgFolder(currentDate);
     const metadata = { name: file.name, parents: [folderId] };
     const fm = new FormData();
     fm.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
@@ -3614,7 +3770,6 @@ async function uploadJImg(file) {
     if(!res.ok) throw new Error('Upload failed: ' + res.status);
     const uploaded = await res.json();
 
-    // Store only the Drive file ID + name in the journal
     const d = getDay(currentDate);
     if(!d.journal) d.journal = {};
     if(!d.journal.images) d.journal.images = [];
@@ -3623,8 +3778,7 @@ async function uploadJImg(file) {
     renderSection();
   } catch(e) {
     alert('Image upload failed: ' + e.message);
-    if(drop?.querySelector('.j-image-drop-text') && origText)
-      drop.querySelector('.j-image-drop-text').textContent = origText;
+    if(dropText) dropText.textContent = 'Add a photo to this entry';
   }
 }
 
@@ -4370,126 +4524,224 @@ function loadGIS() {
   });
 }
 
-function buildDrivePayload() {
-  return {
-    _meta: {
-      version: 2,
-      app: 'raqib',
-      exportedAt: new Date().toISOString(),
-      device: navigator.userAgent.split(')')[0].split('(')[1] || 'unknown',
-    },
+/* ════════════════════════════════════════════════
+   DRIVE — Per-day folder structure
+   Layout: Raqib/YYYY/YYYY-MM/YYYY-MM-DD/data.json
+                                         Images/
+   Also: Raqib/profile.json  (profile, practices, wird, meta)
+════════════════════════════════════════════════ */
+
+// Cache: date string → day folder ID
+const _dayFolderCache = {};
+let _raqibRootId   = null;
+
+async function getRaqibRoot() {
+  if(_raqibRootId) return _raqibRootId;
+  if(!gdriveToken) return null;
+  const q = `name='Raqib' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  const d = await r.json();
+  if(d.files?.[0]?.id) { _raqibRootId = d.files[0].id; return _raqibRootId; }
+  const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + gdriveToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Raqib', mimeType: 'application/vnd.google-apps.folder' }),
+  });
+  const folder = await cr.json();
+  _raqibRootId = folder.id;
+  return _raqibRootId;
+}
+
+// Generic: find or create a folder by name inside a parent folder ID
+async function _findOrMakeFolder(name, parentId) {
+  const q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  const d = await r.json();
+  if(d.files?.[0]?.id) return d.files[0].id;
+  const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + gdriveToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] }),
+  });
+  const f = await cr.json();
+  return f.id;
+}
+
+// Get (or create) the day folder: Raqib/YYYY/YYYY-MM/YYYY-MM-DD
+async function getDayFolder(dateStr) {
+  if(_dayFolderCache[dateStr]) return _dayFolderCache[dateStr];
+  const [year, month] = dateStr.split('-');
+  const rootId  = await getRaqibRoot();
+  const yearId  = await _findOrMakeFolder(year, rootId);
+  const monthId = await _findOrMakeFolder(`${year}-${month}`, yearId);
+  const dayId   = await _findOrMakeFolder(dateStr, monthId);
+  _dayFolderCache[dateStr] = dayId;
+  return dayId;
+}
+
+// Push a single day's data.json into its folder
+async function pushDayData(dateStr, dayData) {
+  if(!gdriveToken) return;
+  const folderId = await getDayFolder(dateStr);
+
+  // Find existing data.json in this folder
+  const q = `name='data.json' and '${folderId}' in parents and trashed=false`;
+  const sr = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  const sd = await sr.json();
+  const existingId = sd.files?.[0]?.id || null;
+
+  const payload = {
+    _meta: { version: 3, app: 'raqib', date: dateStr, savedAt: new Date().toISOString() },
+    ...dayData,
+  };
+  const fm = new FormData();
+  fm.append('metadata', new Blob([JSON.stringify(
+    existingId
+      ? { name: 'data.json' }
+      : { name: 'data.json', parents: [folderId] }
+  )], { type: 'application/json' }));
+  fm.append('file', new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+
+  const url = existingId
+    ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart&fields=id`
+    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`;
+
+  await fetch(url, {
+    method: existingId ? 'PATCH' : 'POST',
+    headers: { Authorization: 'Bearer ' + gdriveToken },
+    body: fm,
+  });
+}
+
+// Push profile/practices/wird to Raqib/profile.json
+async function pushProfile() {
+  if(!gdriveToken) return;
+  const rootId = await getRaqibRoot();
+  const q = `name='profile.json' and '${rootId}' in parents and trashed=false`;
+  const sr = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  const sd = await sr.json();
+  const existingId = sd.files?.[0]?.id || null;
+
+  const payload = {
+    _meta: { version: 3, app: 'raqib', savedAt: new Date().toISOString() },
     profile:   DB.profile,
     practices: DB.practices,
     wird:      DB.wird,
-    days:      Object.fromEntries(
-      Object.entries(DB.days).map(([date, day]) => [date, {
-        niyyah:        day.niyyah        || '',
-        tasks:         day.tasks         || [],
-        prayers:       day.prayers       || {},
-        wirdCounts:    day.wirdCounts    || {},
-        practicesDone: day.practicesDone || {},
-        journal:       day.journal       || {},
-        focusTime:     day.focusTime     || {},
-        totalFocusSec: day.totalFocusSec || 0,
-      }])
-    ),
-    gdrive:    { clientId: DB.gdrive.clientId, lastSync: DB.gdrive.lastSync },
     onboarded: DB.onboarded,
+    gdrive:    { clientId: DB.gdrive.clientId, lastSync: DB.gdrive.lastSync },
   };
+  const fm = new FormData();
+  fm.append('metadata', new Blob([JSON.stringify(
+    existingId ? { name: 'profile.json' } : { name: 'profile.json', parents: [rootId] }
+  )], { type: 'application/json' }));
+  fm.append('file', new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+
+  const url = existingId
+    ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart&fields=id`
+    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`;
+
+  await fetch(url, {
+    method: existingId ? 'PATCH' : 'POST',
+    headers: { Authorization: 'Bearer ' + gdriveToken },
+    body: fm,
+  });
 }
 
-let _driveFileId = sessionStorage.getItem('raqib_fid') || null;
-let _imgFolderId = sessionStorage.getItem('raqib_imgfid') || null;
-
-async function findDriveFile(bypassCache=false) {
-  if(_driveFileId && !bypassCache) return _driveFileId;
-  if(!gdriveToken) return null;
-  try {
-    const r = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name='raqib-data.json' and trashed=false&fields=files(id)`,
-      { headers: { Authorization: 'Bearer ' + gdriveToken } }
-    );
-    if(r.status === 401) { gdriveToken = null; DB.gdrive.connected = false; setSyncState('offline'); return null; }
-    if(!r.ok) return null;
-    const data = await r.json();
-    _driveFileId = data.files?.[0]?.id || null;
-    if(_driveFileId) sessionStorage.setItem('raqib_fid', _driveFileId);
-    else sessionStorage.removeItem('raqib_fid');
-    return _driveFileId;
-  } catch(e) { return null; }
-}
+// Main push: push profile + only dirty/changed days
+let _pendingDayPushes = new Set(); // track which days were modified since last push
 
 async function drivePush() {
   if(!gdriveToken) throw new Error('No token');
 
-  let fid = await findDriveFile();
-  const payload = buildDrivePayload();
-  const fm = new FormData();
-  fm.append('metadata', new Blob([JSON.stringify({name:'raqib-data.json'})], {type:'application/json'}));
-  fm.append('file',     new Blob([JSON.stringify(payload, null, 2)],         {type:'application/json'}));
+  // Always push profile
+  await pushProfile();
 
-  const url = fid
-    ? `https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=multipart&fields=id`
-    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`;
+  // Push all days that have been touched (or all days if we don't know)
+  const daysToPush = _pendingDayPushes.size > 0
+    ? [..._pendingDayPushes]
+    : Object.keys(DB.days);
 
-  const res = await fetch(url, {
-    method:  fid ? 'PATCH' : 'POST',
-    headers: { Authorization: 'Bearer ' + gdriveToken },
-    body:    fm,
-  });
-
-  // Token expired — silent re-auth and one retry
-  if(res.status === 401) {
-    await silentDriveAuth(false);
-    if(!gdriveToken) throw new Error('Token expired, please reconnect Drive');
-    return drivePush();
+  for(const dateStr of daysToPush) {
+    const day = DB.days[dateStr];
+    if(!day) continue;
+    await pushDayData(dateStr, {
+      niyyah:        day.niyyah        || '',
+      tasks:         day.tasks         || [],
+      prayers:       day.prayers       || {},
+      wirdCounts:    day.wirdCounts    || {},
+      practicesDone: day.practicesDone || {},
+      journal:       day.journal       || {},
+      focusTime:     day.focusTime     || {},
+      totalFocusSec: day.totalFocusSec || 0,
+    });
   }
 
-  // File not found (deleted from Drive manually) — clear cache and retry as new file
-  if(res.status === 404) {
-    _driveFileId = null;
-    sessionStorage.removeItem('raqib_fid');
-    return drivePush();
-  }
-
-  if(!res.ok) {
-    const errText = await res.text().catch(()=>'');
-    throw new Error(`Drive error ${res.status}: ${errText.slice(0,200)}`);
-  }
-
-  const saved = await res.json().catch(()=>({}));
-  if(!fid && saved.id) {
-    _driveFileId = saved.id;
-    sessionStorage.setItem('raqib_fid', saved.id);
-  }
+  _pendingDayPushes.clear();
   DB.gdrive.lastSync = new Date().toISOString();
 }
 
-// silent=true → returns true/false, no alert
+// Pull all data from the new folder structure
 async function drivePull(silent=false) {
   if(!gdriveToken) return false;
   try {
-    const fid = await findDriveFile();
-    if(!fid) {
-      if(!silent) alert('No backup found on Drive.');
-      return false;
-    }
-    const data = await (await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fid}?alt=media`,
-      { headers: { Authorization: 'Bearer ' + gdriveToken } }
-    )).json();
+    const rootId = await getRaqibRoot();
+    if(!rootId) { if(!silent) alert('No Raqib folder found on Drive.'); return false; }
 
-    if(data._meta?.version >= 2) {
-      DB.profile       = { ...DB.profile, ...data.profile };
-      DB.practices     = data.practices || DB.practices;
-      DB.wird          = data.wird      || DB.wird;
-      DB.days          = data.days      || DB.days;
-      DB.onboarded     = data.onboarded ?? DB.onboarded;
-      if(data.gdrive?.clientId) DB.gdrive.clientId = data.gdrive.clientId;
-      if(data.gdrive?.lastSync) DB.gdrive.lastSync = data.gdrive.lastSync;
-    } else {
-      DB = { ...DB, ...data };
+    // Load profile.json
+    const profileFileId = await _findFileInFolder('profile.json', rootId);
+    if(profileFileId) {
+      const pdata = await fetchDriveFile(profileFileId);
+      if(pdata) {
+        if(pdata.profile)   DB.profile   = { ...DB.profile,   ...pdata.profile };
+        if(pdata.practices) DB.practices = pdata.practices;
+        if(pdata.wird)      DB.wird      = pdata.wird;
+        if(pdata.onboarded != null) DB.onboarded = pdata.onboarded;
+        if(pdata.gdrive?.clientId) DB.gdrive.clientId = pdata.gdrive.clientId;
+        if(pdata.gdrive?.lastSync) DB.gdrive.lastSync = pdata.gdrive.lastSync;
+      }
     }
+
+    // Scan all year folders → month folders → day folders → data.json
+    const years = await listFolders(rootId);
+    for(const yr of years) {
+      const months = await listFolders(yr.id);
+      for(const mo of months) {
+        const days = await listFolders(mo.id);
+        for(const day of days) {
+          const dataFileId = await _findFileInFolder('data.json', day.id);
+          if(!dataFileId) continue;
+          const dayData = await fetchDriveFile(dataFileId);
+          if(dayData && day.name) {
+            const dateStr = day.name; // folder name IS the date string
+            DB.days[dateStr] = {
+              niyyah:        dayData.niyyah        || '',
+              tasks:         dayData.tasks         || [],
+              prayers:       dayData.prayers       || {},
+              wirdCounts:    dayData.wirdCounts    || {},
+              practicesDone: dayData.practicesDone || {},
+              journal:       dayData.journal       || { shukr:'',amal:'',azm:'',free:'',tags:[],images:[] },
+              focusTime:     dayData.focusTime     || {},
+              totalFocusSec: dayData.totalFocusSec || 0,
+            };
+            // Cache folder IDs so we don't look them up again
+            _dayFolderCache[dateStr] = day.id;
+          }
+        }
+      }
+    }
+
     if(!DB.wird?.length) DB.wird = JSON.parse(JSON.stringify(DEFAULT_WIRD));
     if(!silent) { closeSettings(); init(); setSyncState('ok'); }
     return true;
@@ -4499,11 +4751,102 @@ async function drivePull(silent=false) {
   }
 }
 
+// Helper: list subfolders of a parent
+async function listFolders(parentId) {
+  const q = `mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=200`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  if(!r.ok) return [];
+  const d = await r.json();
+  return d.files || [];
+}
+
+// Helper: find a file by name in a folder (returns file ID or null)
+async function _findFileInFolder(name, parentId) {
+  const q = `name='${name}' and '${parentId}' in parents and trashed=false`;
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  if(!r.ok) return null;
+  const d = await r.json();
+  return d.files?.[0]?.id || null;
+}
+
+// Helper: fetch JSON content of a file by ID
+async function fetchDriveFile(fileId) {
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    { headers: { Authorization: 'Bearer ' + gdriveToken } }
+  );
+  if(!r.ok) return null;
+  return await r.json().catch(()=>null);
+}
+
+// Migration: read old raqib-data.json and push to new structure
+async function migrateOldData() {
+  if(!gdriveToken) return false;
+  try {
+    // Find old flat file
+    const q = `name='raqib-data.json' and trashed=false`;
+    const r = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`,
+      { headers: { Authorization: 'Bearer ' + gdriveToken } }
+    );
+    const d = await r.json();
+    const oldFileId = d.files?.[0]?.id;
+    if(!oldFileId) return false; // nothing to migrate
+
+    const old = await fetchDriveFile(oldFileId);
+    if(!old) return false;
+
+    // Load old data into DB
+    if(old._meta?.version >= 2) {
+      DB.profile   = { ...DB.profile,   ...old.profile };
+      DB.practices = old.practices || DB.practices;
+      DB.wird      = old.wird      || DB.wird;
+      DB.days      = old.days      || DB.days;
+      DB.onboarded = old.onboarded ?? DB.onboarded;
+      if(old.gdrive?.clientId) DB.gdrive.clientId = old.gdrive.clientId;
+      if(old.gdrive?.lastSync) DB.gdrive.lastSync = old.gdrive.lastSync;
+    }
+    if(!DB.wird?.length) DB.wird = JSON.parse(JSON.stringify(DEFAULT_WIRD));
+
+    // Push everything to new structure
+    _pendingDayPushes = new Set(Object.keys(DB.days));
+    await drivePush();
+
+    // Rename old file so it's kept as backup
+    await fetch(`https://www.googleapis.com/drive/v3/files/${oldFileId}`, {
+      method: 'PATCH',
+      headers: { Authorization: 'Bearer ' + gdriveToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'raqib-data.backup.json' }),
+    });
+
+    return true;
+  } catch(e) {
+    console.warn('Migration failed:', e);
+    return false;
+  }
+}
+
+// Mark current day as dirty for next push
+function markDayDirty(dateStr) {
+  _pendingDayPushes.add(dateStr || currentDate);
+}
+
+// Legacy stubs (keep for compatibility with any inline references)
+function buildDrivePayload() { return {}; }
+async function findDriveFile() { return null; }
+
 function driveDisconnect() {
   gdriveToken = null;
   DB.gdrive.connected = false;
-  _driveFileId = null;
-  _imgFolderId = null;
+  _raqibRootId = null;
+  Object.keys(_dayFolderCache).forEach(k => delete _dayFolderCache[k]);
+  Object.keys(_dayImgFolderCache).forEach(k => delete _dayImgFolderCache[k]);
   driveReady = false;
   sessionStorage.removeItem('raqib_cid');
   sessionStorage.removeItem('raqib_fid');
@@ -4527,7 +4870,6 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
   if(storedCid) DB.gdrive.clientId = storedCid;
 
   if(DB.gdrive.clientId) {
-    // Show app shell with loading message — but markUnsaved is blocked until pull completes
     document.getElementById('onboarding').style.display = 'none';
     document.getElementById('app').classList.add('visible');
     document.getElementById('fab').style.display = 'none';
@@ -4536,27 +4878,28 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
         Loading from Drive…
        </div>`;
 
-    // Auth silently — no push, no write
     await silentDriveAuth(false);
 
     if(gdriveToken) {
-      const loaded = await drivePull(true);
-      if(loaded) {
-        driveReady = true; // data loaded — safe to accept writes
-        init();
-        setSyncState('ok');
-        return;
+      // First check for old flat file and migrate if needed
+      const migrated = await migrateOldData();
+      if(!migrated) {
+        // No old file — try new structure pull
+        const loaded = await drivePull(true);
+        if(!loaded) {
+          driveReady = true;
+          DB.onboarded = true;
+          init();
+          setSyncState('ok');
+          return;
+        }
       }
-      // Token worked but no file found — first time on this account
-      driveReady = true; // confirmed new account — safe to write on first user action
-      DB.onboarded = true;
+      driveReady = true;
       init();
       setSyncState('ok');
       return;
     }
 
-    // Silent auth failed (new browser/device — needs interactive login)
-    // Go back to onboarding with CID pre-filled
     document.getElementById('app').classList.remove('visible');
     document.getElementById('onboarding').style.display = '';
     const cidInput = document.getElementById('ob-cid');
@@ -4566,7 +4909,6 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
     return;
   }
 
-  // No Client ID — show onboarding fresh
   document.getElementById('fab').style.display = 'none';
   setSyncState('offline');
 })();
