@@ -2629,7 +2629,7 @@ const COLORS = ['#b8881c','#2d5a3d','#2a4a6b','#5a3a7a','#8b3a2a','#3a6e8f','#7a
 let DB = {
   profile: { name:'', theme:'light', fontSize:'medium' },
   days: {}, practices: [], wird: JSON.parse(JSON.stringify(DEFAULT_WIRD)),
-  gdrive: { connected:false, clientId:'', lastSync:null },
+  gdrive: { connected:false, clientId:'111426887413-md2gvq2djc7p7qqgp57p5v0s1eichp8b.apps.googleusercontent.com', lastSync:null },
   onboarded: false,
 };
 let currentSection = 'niyyah';
@@ -4856,8 +4856,9 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
    BOOT — read-only until Drive pull succeeds
 ════════════════════════════════════════════════ */
 (async function boot() {
-  const storedCid = sessionStorage.getItem('raqib_cid');
-  if(storedCid) DB.gdrive.clientId = storedCid;
+  const HARDCODED_CID = '111426887413-md2gvq2djc7p7qqgp57p5v0s1eichp8b.apps.googleusercontent.com';
+  const storedCid = sessionStorage.getItem('raqib_cid') || HARDCODED_CID;
+  DB.gdrive.clientId = storedCid;
 
   if(DB.gdrive.clientId) {
     document.getElementById('onboarding').style.display = 'none';
