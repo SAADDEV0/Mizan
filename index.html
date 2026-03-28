@@ -2594,6 +2594,7 @@ const NAV = [
   { id:'amal',      en:'Amal',      ar:'عمل',     icon:'◈' },
   { id:'muhasabah', en:'Sijjil',    ar:'سجلّ',    icon:'✎' },
   { id:'mizan',     en:'Mizan',     ar:'ميزان',   icon:'⚖' },
+  { id:'mal',       en:'Māl',       ar:'مال',     icon:'◎' },
 ];
 const BLOCKS = [
   { id:'dawn',      en:'Dawn',      ar:'الفجر',  color:'#7a9ec8', icon:'🌅', time:'4–6 AM',  note:'Early morning focus' },
@@ -2634,6 +2635,7 @@ let DB = {
   days: {}, practices: [], wird: JSON.parse(JSON.stringify(DEFAULT_WIRD)),
   gdrive: { connected:false, clientId:'111426887413-md2gvq2djc7p7qqgp57p5v0s1eichp8b.apps.googleusercontent.com', lastSync:null },
   onboarded: false,
+  mal: { budget: 0, months: {} },
 };
 let currentSection = 'niyyah';
 let mizanPeriod = 'today'; // 'today' | '7d' | '30d' | '365d'
@@ -3093,7 +3095,14 @@ function renderNav() {
 }
 function navigate(id) {
   currentSection=id; renderNav(); renderSection();
-  document.getElementById('fab').style.display = (id==='niyyah'||id==='amal') ? 'flex' : 'none';
+  const fab = document.getElementById('fab');
+  if(id==='mal') {
+    fab.style.display = 'flex';
+    fab.onclick = openMalSheet;
+  } else {
+    fab.onclick = null;
+    fab.style.display = (id==='niyyah'||id==='amal') ? 'flex' : 'none';
+  }
 }
 
 /* ════════════════════════════════════════════════
@@ -3123,6 +3132,7 @@ function renderSection() {
     case 'amal':      renderAmal(el);   break;
     case 'muhasabah': renderMuhasabah(el); break;
     case 'mizan':     renderMizan(el);  break;
+    case 'mal':       renderMal(el);    break;
   }
 }
 
@@ -5065,6 +5075,174 @@ function copyQuote() {
 }
 
 /* ════════════════════════════════════════════════
+   MĀL — MONEY TRACKER
+════════════════════════════════════════════════ */
+function malMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function getMalMonth(key) {
+  if(!DB.mal) DB.mal = { budget: 0, months: {} };
+  if(!DB.mal.months) DB.mal.months = {};
+  if(!DB.mal.months[key]) DB.mal.months[key] = { expenses: [] };
+  return DB.mal.months[key];
+}
+function malFmt(n) {
+  return Number(n).toLocaleString('en-MA', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function renderMal(el) {
+  if(!DB.mal) DB.mal = { budget: 0, months: {} };
+  const mk = malMonthKey();
+  const month = getMalMonth(mk);
+  const budget = DB.mal.budget || 0;
+  const expenses = month.expenses || [];
+  const spent = expenses.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
+  const left = budget - spent;
+  const pct = budget > 0 ? Math.min(Math.round(spent/budget*100), 100) : 0;
+  const barColor = pct >= 100 ? 'var(--rust)' : pct >= 80 ? 'var(--gold)' : 'var(--green)';
+  const leftColor = left < 0 ? 'var(--rust)' : left < budget*0.2 ? 'var(--gold)' : 'var(--green)';
+
+  const now = new Date();
+  const monthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  let h = `<div class="s-head">
+    <div class="s-kicker">Money</div>
+    <div class="s-title">Māl <span class="s-title-ar">مال</span></div>
+    <div class="s-sub">${monthLabel}</div>
+  </div>`;
+
+  /* ── Budget hero card ── */
+  h += `<div style="background:var(--surface);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-md)">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:6px">Monthly budget</div>
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span style="font-family:var(--serif);font-size:48px;font-weight:300;line-height:1;color:var(--text)" id="mal-budget-display">${budget > 0 ? malFmt(budget) : '—'}</span>
+          <span style="font-size:13px;color:var(--text3)">MAD</span>
+        </div>
+      </div>
+      <button onclick="openMalBudgetEdit()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;font-family:var(--sans);font-size:12px;color:var(--text3);cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">Edit</button>
+    </div>
+
+    ${budget > 0 ? `
+    <div style="height:6px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:16px">
+      <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width 0.6s var(--ease)"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text4);margin-bottom:4px">Spent</div>
+        <div style="font-family:var(--serif);font-size:22px;font-weight:400;color:var(--text)">${malFmt(spent)}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text4);margin-bottom:4px">Left</div>
+        <div style="font-family:var(--serif);font-size:22px;font-weight:400;color:${leftColor}">${malFmt(left)}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text4);margin-bottom:4px">Used</div>
+        <div style="font-family:var(--serif);font-size:22px;font-weight:400;color:${barColor}">${pct}%</div>
+      </div>
+    </div>` : `<div style="font-family:var(--serif);font-style:italic;font-size:15px;color:var(--text4)">Set a monthly budget to track your spending.</div>`}
+  </div>`;
+
+  /* ── Expenses list ── */
+  h += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text4);font-weight:500">${expenses.length} expense${expenses.length!==1?'s':''} this month</div>
+    ${expenses.length > 0 ? `<div style="font-size:11px;color:var(--text4)">${malFmt(spent)} MAD total</div>` : ''}
+  </div>`;
+
+  if(expenses.length === 0) {
+    h += `<div style="background:var(--surface);border-radius:var(--radius);padding:32px;text-align:center;box-shadow:var(--shadow-sm)">
+      <div style="font-family:var(--serif);font-style:italic;font-size:16px;color:var(--text4);line-height:1.7">No expenses yet.<br>Tap ＋ to log your first spend.</div>
+    </div>`;
+  } else {
+    h += `<div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden">`;
+    [...expenses].reverse().forEach((exp, ri) => {
+      const i = expenses.length - 1 - ri;
+      const d = new Date(exp.date);
+      const dateStr = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+      const isLast = ri === expenses.length - 1;
+      h += `<div style="display:flex;align-items:center;gap:14px;padding:14px 18px;${isLast?'':'border-bottom:1px solid var(--border)'}">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px">${esc(exp.desc||'Expense')}</div>
+          <div style="font-size:11px;color:var(--text4)">${dateStr}</div>
+        </div>
+        <div style="font-family:var(--serif);font-size:18px;font-weight:400;color:var(--text);white-space:nowrap">${malFmt(exp.amount)} <span style="font-size:11px;color:var(--text4)">MAD</span></div>
+        <button onclick="deleteMalExpense('${mk}', ${i})" style="background:none;border:none;color:var(--text4);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:4px;opacity:0.5;transition:all 0.15s" onmouseover="this.style.opacity='1';this.style.color='var(--rust)'" onmouseout="this.style.opacity='0.5';this.style.color='var(--text4)'">✕</button>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+
+  /* ── Previous months ── */
+  const allMonths = Object.keys(DB.mal.months||{}).sort().reverse().filter(k => k !== mk);
+  if(allMonths.length) {
+    h += `<div style="margin-top:28px">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text4);font-weight:500;margin-bottom:12px">Previous months</div>`;
+    allMonths.slice(0,3).forEach(key => {
+      const m = DB.mal.months[key];
+      const mSpent = (m.expenses||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+      const [yr, mo] = key.split('-');
+      const mLabel = new Date(parseInt(yr), parseInt(mo)-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:13px;color:var(--text2)">${mLabel}</div>
+        <div style="font-family:var(--serif);font-size:16px;color:var(--text3)">${malFmt(mSpent)} MAD</div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+
+  el.innerHTML = h;
+
+  // Wire up FAB for this section
+  const fab = document.getElementById('fab');
+  if(fab) fab.onclick = openMalSheet;
+}
+
+function openMalSheet() {
+  document.getElementById('mal-sheet-bg').classList.add('open');
+  document.getElementById('mal-amount').value = '';
+  document.getElementById('mal-desc').value = '';
+  setTimeout(()=>document.getElementById('mal-amount').focus(), 200);
+}
+function closeMalSheet() {
+  document.getElementById('mal-sheet-bg').classList.remove('open');
+}
+function saveMalExpense() {
+  const amt = parseFloat(document.getElementById('mal-amount').value);
+  const desc = document.getElementById('mal-desc').value.trim();
+  if(!amt || amt <= 0) { document.getElementById('mal-amount').focus(); return; }
+  const mk = malMonthKey();
+  const month = getMalMonth(mk);
+  month.expenses.push({ id: genId(), amount: amt, desc: desc || 'Expense', date: new Date().toISOString() });
+  markUnsaved();
+  closeMalSheet();
+  renderSection();
+}
+function deleteMalExpense(mk, idx) {
+  const month = getMalMonth(mk);
+  month.expenses.splice(idx, 1);
+  markUnsaved();
+  renderSection();
+}
+function openMalBudgetEdit() {
+  document.getElementById('mal-budget-sheet-bg').classList.add('open');
+  document.getElementById('mal-budget-input').value = DB.mal.budget || '';
+  setTimeout(()=>document.getElementById('mal-budget-input').focus(), 200);
+}
+function closeMalBudgetSheet() {
+  document.getElementById('mal-budget-sheet-bg').classList.remove('open');
+}
+function saveMalBudget() {
+  const v = parseFloat(document.getElementById('mal-budget-input').value);
+  if(!v || v <= 0) { document.getElementById('mal-budget-input').focus(); return; }
+  DB.mal.budget = v;
+  markUnsaved();
+  closeMalBudgetSheet();
+  renderSection();
+}
+
+/* ════════════════════════════════════════════════
    SETTINGS
 ════════════════════════════════════════════════ */
 function openSettings() {
@@ -5144,7 +5322,7 @@ function doImport(e) {
 function clearData() {
   if(!confirm('Delete ALL data?')) return;
   if(!confirm('This cannot be undone. Continue?')) return;
-  DB={profile:{name:'',theme:'light'},days:{},practices:[],wird:JSON.parse(JSON.stringify(DEFAULT_WIRD)),gdrive:{connected:DB.gdrive.connected,clientId:DB.gdrive.clientId,lastSync:null},onboarded:true};
+  DB={profile:{name:'',theme:'light'},days:{},practices:[],wird:JSON.parse(JSON.stringify(DEFAULT_WIRD)),gdrive:{connected:DB.gdrive.connected,clientId:DB.gdrive.clientId,lastSync:null},onboarded:true,mal:{budget:0,months:{}}};
   closeSettings(); renderSection();
   markUnsaved(); // push cleared state to Drive
 }
@@ -5251,5 +5429,42 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
   setSyncState('offline');
 })();
 </script>
+<!-- Māl: Add Expense Sheet -->
+<div class="bs-bg" id="mal-sheet-bg" onclick="if(event.target===this)closeMalSheet()">
+  <div class="bs-panel">
+    <div class="bs-handle"></div>
+    <div class="bs-title">Log expense</div>
+    <div class="fg">
+      <label class="fl">Amount (MAD)</label>
+      <input type="number" class="fi" id="mal-amount" placeholder="0" min="0" step="0.01"
+        inputmode="decimal"
+        onkeydown="if(event.key==='Enter')document.getElementById('mal-desc').focus()" />
+    </div>
+    <div class="fg">
+      <label class="fl">Description</label>
+      <input type="text" class="fi" id="mal-desc" placeholder="What did you spend on?"
+        onkeydown="if(event.key==='Enter')saveMalExpense()" />
+    </div>
+    <button class="submit-btn" onclick="saveMalExpense()" style="width:100%;margin-top:4px">Save expense</button>
+    <button class="ob-ghost" onclick="closeMalSheet()">Cancel</button>
+  </div>
+</div>
+
+<!-- Māl: Edit Budget Sheet -->
+<div class="bs-bg" id="mal-budget-sheet-bg" onclick="if(event.target===this)closeMalBudgetSheet()">
+  <div class="bs-panel">
+    <div class="bs-handle"></div>
+    <div class="bs-title">Monthly budget</div>
+    <div class="fg">
+      <label class="fl">Budget amount (MAD)</label>
+      <input type="number" class="fi" id="mal-budget-input" placeholder="e.g. 5000" min="0" step="1"
+        inputmode="decimal"
+        onkeydown="if(event.key==='Enter')saveMalBudget()" />
+    </div>
+    <button class="submit-btn" onclick="saveMalBudget()" style="width:100%;margin-top:4px">Save budget</button>
+    <button class="ob-ghost" onclick="closeMalBudgetSheet()">Cancel</button>
+  </div>
+</div>
+
 </body>
 </html>
