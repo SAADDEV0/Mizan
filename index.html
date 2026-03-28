@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Raqib — رقيب</title>
+<title>SaadOs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -73,6 +73,8 @@
   --nav-h: 72px;
   --col: 680px;
 }
+
+/* Override: hero brand will show SaadOs */
 
 /* ──────────────────────────────────────────────
    RESET & BASE
@@ -2423,8 +2425,8 @@ canvas { width: 100%; display: block; }
 <div class="ob-wrap">
   <div class="ob-step active" id="ob-0">
     <div class="ob-eyebrow">Welcome</div>
-    <div class="ob-logo">Raqib</div>
-    <span class="ob-logo-ar">رقيب</span>
+    <div class="ob-logo">SaadOs</div>
+    <span class="ob-logo-ar" style="font-family:var(--sans);font-size:18px;letter-spacing:2px">Your Personal OS</span>
     <div class="ob-desc">Your data lives entirely in your Google Drive — no servers, no accounts. Connect once and your journal syncs across every device automatically.</div>
 
     <div class="ob-drive-box" id="ob-drive-box">
@@ -2449,7 +2451,7 @@ canvas { width: 100%; display: block; }
 ════════════════════════════════ -->
 <div id="app">
   <div id="hero">
-    <div class="hero-brand">Raqib <span style="font-family:var(--serif);font-size:16px">رقيب</span></div>
+    <div class="hero-brand">SaadOs</div>
     <div id="hero-day" class="hero-date"></div>
     <div id="hero-full" class="hero-date-full"></div>
     <div class="hero-nav-row">
@@ -2575,10 +2577,11 @@ canvas { width: 100%; display: block; }
 </div>
 
 
-<!-- Journal image lightbox -->
+<!-- Journal media lightbox -->
 <div id="j-lightbox" onclick="closeJLightbox()">
   <button id="j-lightbox-close" onclick="closeJLightbox()">✕</button>
-  <img id="j-lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
+  <img id="j-lightbox-img" src="" alt="" onclick="event.stopPropagation()" style="display:none" />
+  <video id="j-lightbox-vid" controls onclick="event.stopPropagation()" style="display:none;max-width:90vw;max-height:88vh;border-radius:14px;box-shadow:0 8px 48px rgba(0,0,0,0.5)"></video>
 </div>
 
 <script>
@@ -2995,8 +2998,14 @@ function shiftDay(n) {
 }
 function goToday() { currentDate=todayStr(); renderHero(); renderSection(); }
 function getDay(s) {
-  if(!DB.days[s]) DB.days[s]={ niyyah:'', tasks:[], prayers:{}, practicesDone:{}, wirdCounts:{}, focusTime:{}, totalFocusSec:0, journal:{shukr:'',amal:'',azm:'',free:'',tags:[],images:[]} };
-  return DB.days[s];
+  if(!DB.days[s]) DB.days[s]={ niyyah:'', tasks:[], prayers:{}, practicesDone:{}, wirdCounts:{}, focusTime:{}, totalFocusSec:0, journal:{text:'',tags:[],images:[],videos:[]}, nawafil:[] };
+  const d = DB.days[s];
+  if(!d.nawafil) d.nawafil = [];
+  if(!d.journal) d.journal = {text:'',tags:[],images:[],videos:[]};
+  if(!d.journal.videos) d.journal.videos = [];
+  if(!d.journal.images) d.journal.images = [];
+  if(!d.journal.tags) d.journal.tags = [];
+  return d;
 }
 function getDayRO(s) { return DB.days[s]||null; }
 
@@ -3188,16 +3197,14 @@ function renderNiyyah(el) {
       </div>`;
     } else {
       [...tasks].sort((a,b)=>(a.done?1:0)-(b.done?1:0)).forEach(t=>{
-        const pc = {low:'#2d5a3d',medium:'#b8881c',urgent:'#8b3a2a'}[t.priority||'medium'];
         const focusedSec=(day.focusTime||{})[t.id]||0;
         const focusedMin=focusedSec>0?Math.round(focusedSec/60):0;
         h+=`<div class="task-row ${t.done?'done':''}" id="tr-${t.id}">
-          <div class="task-priority" style="background:${pc}"></div>
           <div class="task-cb ${t.done?'ticked':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
           <div class="task-info">
             <div class="task-name">${esc(t.name)}</div>
             ${t.note?`<div class="task-note">${esc(t.note)}</div>`:''}
-            <div class="task-meta">${t.duration?`⏱ ${t.duration}min`:''}${focusedMin?` · 🍅 ${focusedMin}m focused`:''} · ${'🔴'.repeat(Math.min(t.pomSessions||4,8))} ${t.pomSessions||4} sessions · ${t.priority||'medium'}</div>
+            <div class="task-meta">${t.duration?`⏱ ${t.duration}min`:''}${focusedMin?` · 🍅 ${focusedMin}m focused`:''} · ${'🔴'.repeat(Math.min(t.pomSessions||4,8))} ${t.pomSessions||4} sessions</div>
           </div>
           ${!t.done?`<button class="task-focus-btn" onclick="openFocusMode('${t.id}')" title="Focus">🎯</button>`:''}
           <button class="task-edit-btn" onclick="openEditTask('${t.id}')" title="Edit">✎</button>
@@ -3209,20 +3216,6 @@ function renderNiyyah(el) {
   });
   h += `</div>`;
 
-  const deferred = getDeferredTasks();
-  if(deferred.length) {
-    h+=`<div class="deferred-section" style="margin-top:16px"><div class="deferred-head" onclick="toggleDeferred()">
-      ↩ Carried forward (${deferred.length}) <span id="def-tog" style="margin-left:auto">▾</span>
-    </div><div id="def-body">`;
-    deferred.forEach(t=>{
-      h+=`<div style="padding:10px 18px;border-bottom:1px solid var(--cream)">
-        <div style="font-size:13px;font-weight:500">${esc(t.name)}</div>
-        <div style="font-size:11px;color:var(--ink4);margin-top:2px">From ${t.fromDate} · ${t.days} day${t.days>1?'s':''} ago</div>
-      </div>`;
-    });
-    h+=`</div></div>`;
-  }
-
   el.innerHTML = h;
   el.querySelector('#niyyah-text').addEventListener('input',e=>{
     getDay(currentDate).niyyah=e.target.value; markUnsaved();
@@ -3230,10 +3223,6 @@ function renderNiyyah(el) {
 }
 
 function toggleBlock(id) { document.getElementById('bc-'+id).classList.toggle('collapsed'); }
-function toggleDeferred() {
-  const b=document.getElementById('def-body');
-  if(b) b.style.display = b.style.display==='none'?'':'none';
-}
 function toggleTask(id) {
   const day=getDay(currentDate);
   const t=(day.tasks||[]).find(x=>x.id===id);
@@ -3253,14 +3242,23 @@ function deleteTask(id) {
   day.tasks=(day.tasks||[]).filter(x=>x.id!==id);
   markUnsaved(); renderSection();
 }
-function getDeferredTasks() {
-  const res=[], today=new Date(currentDate+'T12:00:00');
-  Object.entries(DB.days).forEach(([ds,day])=>{
-    const d=new Date(ds+'T12:00:00');
-    if(d>=today) return;
-    (day.tasks||[]).forEach(t=>{ if(!t.done) res.push({...t,fromDate:ds,days:Math.round((today-d)/86400000)}); });
+function getWeekUnfinishedTasks() {
+  // Returns unfinished tasks from the current ISO week (Mon–Sun), excluding today
+  const res = [];
+  const today = new Date(todayStr()+'T12:00:00');
+  // Find start of current week (Monday)
+  const dayOfWeek = (today.getDay()+6)%7; // 0=Mon
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - dayOfWeek);
+  Object.entries(DB.days).forEach(([ds, day]) => {
+    const d = new Date(ds+'T12:00:00');
+    if(ds === todayStr()) return; // skip today
+    if(d < weekStart || d >= today) return; // only this week's past days
+    (day.tasks||[]).forEach(t => {
+      if(!t.done) res.push({...t, fromDate:ds, days:Math.round((today-d)/86400000)});
+    });
   });
-  return res.slice(0,10);
+  return res;
 }
 
 /* ════════════════════════════════════════════════
@@ -3281,12 +3279,6 @@ function openAddTask() {
       <select class="fi" id="ti-block">
         ${BLOCKS.map(b=>`<option value="${b.id}">${b.icon} ${b.en} · ${b.time}</option>`).join('')}
       </select></div>
-    <div class="fg"><label class="fl">Priority</label>
-      <div class="prio-row">
-        <div class="prio-btn" data-p="low"    onclick="selPrio(this)">Low</div>
-        <div class="prio-btn sel-medium" data-p="medium" onclick="selPrio(this)">Medium</div>
-        <div class="prio-btn" data-p="urgent" onclick="selPrio(this)">Urgent</div>
-      </div></div>
     <div class="fg"><label class="fl">Duration (min)</label>
       <input type="number" class="fi" id="ti-dur" placeholder="30" min="1" max="480" /></div>
     <div class="fg"><label class="fl">Pomodoro sessions</label>
@@ -3312,13 +3304,12 @@ function submitTask() {
   if(!name) return;
   const block=document.getElementById('ti-block').value;
   const note =document.getElementById('ti-note').value.trim();
-  const prio =document.querySelector('.prio-btn[class*="sel-"]')?.dataset.p||'medium';
   const dur      = parseInt(document.getElementById('ti-dur').value)||0;
   const pomSel   = document.querySelector('.pom-pick.sel');
   const pomCount = pomSel ? parseInt(pomSel.dataset.n) : 4;
   const day  = getDay(currentDate);
   if(!day.tasks) day.tasks=[];
-  day.tasks.push({id:genId(),name,block,note,priority:prio,duration:dur||undefined,pomSessions:pomCount,done:false,createdAt:currentDate});
+  day.tasks.push({id:genId(),name,block,note,duration:dur||undefined,pomSessions:pomCount,done:false,createdAt:currentDate});
   markUnsaved(); closeBS(); renderSection();
 }
 function openEditTask(id) {
@@ -3341,12 +3332,6 @@ function openEditTask(id) {
       <input type="text" class="fi" id="ti-note" value="${esc(task.note||'')}" placeholder="Optional detail…" /></div>
     <div class="fg"><label class="fl">Time of day</label>
       <select class="fi" id="ti-block">${blockOpts}</select></div>
-    <div class="fg"><label class="fl">Priority</label>
-      <div class="prio-row">
-        <div class="prio-btn ${task.priority==='low'?'sel-low':''}"    data-p="low"    onclick="selPrio(this)">Low</div>
-        <div class="prio-btn ${!task.priority||task.priority==='medium'?'sel-medium':''}" data-p="medium" onclick="selPrio(this)">Medium</div>
-        <div class="prio-btn ${task.priority==='urgent'?'sel-urgent':''}" data-p="urgent" onclick="selPrio(this)">Urgent</div>
-      </div></div>
     <div class="fg"><label class="fl">Duration (min)</label>
       <input type="number" class="fi" id="ti-dur" value="${task.duration||''}" placeholder="30" min="1" max="480" /></div>
     <div class="fg"><label class="fl">Pomodoro sessions</label>
@@ -3363,7 +3348,6 @@ function saveEditTask(id) {
   if(!name) return;
   const block    = document.getElementById('ti-block').value;
   const note     = document.getElementById('ti-note').value.trim();
-  const prio     = document.querySelector('.prio-btn[class*="sel-"]')?.dataset.p||'medium';
   const dur      = parseInt(document.getElementById('ti-dur').value)||0;
   const pomSel   = document.querySelector('.pom-pick.sel');
   const pomCount = pomSel ? parseInt(pomSel.dataset.n) : 4;
@@ -3373,7 +3357,6 @@ function saveEditTask(id) {
   task.name = name;
   task.note = note;
   task.block = block;
-  task.priority = prio;
   task.duration = dur||undefined;
   task.pomSessions = pomCount;
   markUnsaved(); closeBS(); renderSection();
@@ -3387,6 +3370,7 @@ function closeBS() { document.getElementById('bs-bg').classList.remove('open'); 
 function renderSalat(el) {
   const day=getDay(currentDate);
   if(!day.prayers) day.prayers={};
+  if(!day.nawafil) day.nawafil=[];
 
   let h=`<div class="s-head">
     <div class="s-kicker">Prayer</div>
@@ -3397,54 +3381,203 @@ function renderSalat(el) {
   <div class="prayer-line"></div>`;
 
   PRAYERS.forEach(p=>{
-    const st=day.prayers[p.id]?.status||'not_yet';
-    const notes=day.prayers[p.id]?.notes||'';
-    const lbl={on_time:'On time',late:'Late',missed:'Missed',not_yet:'Not yet'}[st];
-    const dot=st==='on_time'?'✓':st==='late'?'↓':st==='missed'?'✕':'·';
+    const pr = day.prayers[p.id] || {};
+    const location = pr.location || 'not_yet'; // 'mosque','home','not_yet'
+    const timing   = pr.timing   || 'not_yet'; // 'on_time','late' — only when location=home
+    const notes    = pr.notes    || '';
+
+    // Determine display status
+    let displayStatus = 'not_yet';
+    if(location==='mosque') displayStatus = 'mosque';
+    else if(location==='home') displayStatus = timing==='on_time'?'on_time':timing==='late'?'late':'home';
+
+    const dot = location==='mosque'?'🕌':location==='home'?(timing==='on_time'?'✓':timing==='late'?'↓':'🏠'):'·';
+    const badgeText = location==='mosque'?'Mosque':location==='home'?(timing==='on_time'?'Home · On time':timing==='late'?'Home · Late':'Home'):'Not yet';
+    const badgeCls  = location==='mosque'?'on_time':location==='home'&&timing==='on_time'?'on_time':location==='home'&&timing==='late'?'late':'not_yet';
+
     h+=`<div class="prayer-item">
-      <div class="prayer-dot-wrap"><div class="prayer-dot ${st!=='not_yet'?st:''}">${dot}</div></div>
-      <div class="prayer-card ${''}" id="pc-${p.id}">
+      <div class="prayer-dot-wrap"><div class="prayer-dot ${location!=='not_yet'?(location==='mosque'?'on_time':timing||''):''}">
+        <span style="font-size:11px">${dot}</span>
+      </div></div>
+      <div class="prayer-card" id="pc-${p.id}">
         <div class="p-header" onclick="togglePrayer('${p.id}')">
           <span class="p-name">${p.en}</span>
           <span class="p-ar">${p.ar}</span>
-          <span class="p-badge ${st}">${lbl}</span>
+          <span class="p-badge ${badgeCls}">${badgeText}</span>
           <span class="p-caret">▾</span>
         </div>
         <div class="p-expand">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:8px">Where did you pray?</div>
           <div class="p-status-row">
-            <div class="p-status-btn ${st==='on_time'?'s-on_time':''}" onclick="setPrayer('${p.id}','on_time')">✓ On time</div>
-            <div class="p-status-btn ${st==='late'?'s-late':''}"    onclick="setPrayer('${p.id}','late')">↓ Late</div>
-            <div class="p-status-btn ${st==='missed'?'s-missed':''}" onclick="setPrayer('${p.id}','missed')">✕ Missed</div>
-            <div class="p-status-btn" onclick="setPrayer('${p.id}','not_yet')">○ Reset</div>
+            <div class="p-status-btn ${location==='mosque'?'s-on_time':''}" onclick="setPrayerLocation('${p.id}','mosque')">🕌 Mosque</div>
+            <div class="p-status-btn ${location==='home'?'s-late':''}"    onclick="setPrayerLocation('${p.id}','home')">🏠 Home</div>
+            <div class="p-status-btn" onclick="resetPrayer('${p.id}')">○ Reset</div>
           </div>
+          ${location==='home'?`
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:500;margin:10px 0 8px">Timing</div>
+          <div class="p-status-row">
+            <div class="p-status-btn ${timing==='on_time'?'s-on_time':''}" onclick="setPrayerTiming('${p.id}','on_time')">✓ On time</div>
+            <div class="p-status-btn ${timing==='late'?'s-late':''}"       onclick="setPrayerTiming('${p.id}','late')">↓ Late</div>
+          </div>`:''}
           <textarea class="p-notes" placeholder="Notes, adhkar…"
             onchange="savePrayerNotes('${p.id}',this.value)">${esc(notes)}</textarea>
         </div>
       </div>
     </div>`;
   });
+
+  // Nawafil section
+  const nawafil = day.nawafil || [];
+  h+=`</div>
+  <div style="margin-top:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:500">Nawafil — نوافل</div>
+      <button onclick="openAddNafl()" style="background:none;border:1.5px solid var(--border);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--ink3);cursor:pointer;font-family:var(--sans);transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--ink3)'">+ Add Nafl</button>
+    </div>`;
+
+  if(!nawafil.length) {
+    h+=`<div class="empty-state" style="padding:16px 0;font-size:13px">No nawafil recorded — tap + Add Nafl</div>`;
+  } else {
+    h+=`<div class="prayer-stack"><div class="prayer-line"></div>`;
+    nawafil.forEach((nf,i)=>{
+      const loc = nf.location||'home';
+      const tim = nf.timing||'on_time';
+      const badgeTxt = loc==='mosque'?'Mosque':(tim==='on_time'?'Home · On time':'Home · Late');
+      const badgeCl  = loc==='mosque'?'on_time':tim==='on_time'?'on_time':'late';
+      h+=`<div class="prayer-item">
+        <div class="prayer-dot-wrap"><div class="prayer-dot ${loc==='mosque'?'on_time':tim}">
+          <span style="font-size:10px">${loc==='mosque'?'🕌':'✓'}</span>
+        </div></div>
+        <div class="prayer-card" id="nf-${i}">
+          <div class="p-header" onclick="toggleNafl(${i})">
+            <span class="p-name">${esc(nf.name)}</span>
+            <span class="p-badge ${badgeCl}">${badgeTxt}</span>
+            <span class="p-caret">▾</span>
+          </div>
+          <div class="p-expand">
+            <div class="p-status-row">
+              <div class="p-status-btn ${loc==='mosque'?'s-on_time':''}" onclick="setNaflLocation(${i},'mosque')">🕌 Mosque</div>
+              <div class="p-status-btn ${loc==='home'?'s-late':''}"     onclick="setNaflLocation(${i},'home')">🏠 Home</div>
+            </div>
+            ${loc==='home'?`<div class="p-status-row" style="margin-top:8px">
+              <div class="p-status-btn ${tim==='on_time'?'s-on_time':''}" onclick="setNaflTiming(${i},'on_time')">✓ On time</div>
+              <div class="p-status-btn ${tim==='late'?'s-late':''}"       onclick="setNaflTiming(${i},'late')">↓ Late</div>
+            </div>`:''}
+            <button onclick="deleteNafl(${i})" style="margin-top:10px;background:none;border:none;color:var(--rust);font-size:12px;cursor:pointer;padding:4px 0">✕ Remove</button>
+          </div>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
   h+=`</div>`;
 
-  // Week strip
-  const today=new Date(todayStr()+'T12:00:00');
-  h+=`<div class="week-strip">`;
+  // Week strip — count mosque as on_time, home+on_time as on_time, home+late as late
+  const today2=new Date(todayStr()+'T12:00:00');
+  h+=`<div class="week-strip" style="margin-top:20px">`;
   for(let i=6;i>=0;i--){
-    const d=new Date(today); d.setDate(d.getDate()-i);
+    const d=new Date(today2); d.setDate(d.getDate()-i);
     const ds=d.toISOString().split('T')[0];
     const dayD=getDayRO(ds);
     let cnt=0;
-    if(dayD?.prayers) PRAYERS.forEach(p=>{ if(dayD.prayers[p.id]?.status==='on_time') cnt++; });
+    if(dayD?.prayers) PRAYERS.forEach(p=>{
+      const pr=dayD.prayers[p.id]||{};
+      if(pr.location==='mosque'||(pr.location==='home'&&pr.timing==='on_time')) cnt++;
+    });
     const lbl=d.toLocaleDateString('en-US',{weekday:'short'});
-    const cls=cnt===5?'full':cnt>0?'partial':'';
+    const total = PRAYERS.length + ((dayD?.nawafil||[]).length);
+    const cls=cnt===PRAYERS.length?'full':cnt>0?'partial':'';
     h+=`<div class="wday"><div class="wday-label">${lbl}</div><div class="wday-bubble ${cls}">${cnt}</div></div>`;
   }
   h+=`</div>`;
 
   el.innerHTML=h;
 }
+
 function togglePrayer(id) { document.getElementById('pc-'+id).classList.toggle('open'); }
-function setPrayer(id,st) { const d=getDay(currentDate); if(!d.prayers) d.prayers={}; if(!d.prayers[id]) d.prayers[id]={}; d.prayers[id].status=st; markUnsaved(); renderSection(); }
+function toggleNafl(i) { document.getElementById('nf-'+i)?.classList.toggle('open'); }
+
+function setPrayerLocation(id, loc) {
+  const d=getDay(currentDate); if(!d.prayers) d.prayers={};
+  if(!d.prayers[id]) d.prayers[id]={};
+  d.prayers[id].location=loc;
+  if(loc==='mosque') d.prayers[id].timing='on_time';
+  markUnsaved(); renderSection();
+}
+function setPrayerTiming(id, tim) {
+  const d=getDay(currentDate); if(!d.prayers) d.prayers={};
+  if(!d.prayers[id]) d.prayers[id]={};
+  d.prayers[id].timing=tim;
+  markUnsaved(); renderSection();
+}
+function resetPrayer(id) {
+  const d=getDay(currentDate); if(!d.prayers) d.prayers={};
+  d.prayers[id]={location:'not_yet',timing:'not_yet',notes:''};
+  markUnsaved(); renderSection();
+}
 function savePrayerNotes(id,v) { const d=getDay(currentDate); if(!d.prayers) d.prayers={}; if(!d.prayers[id]) d.prayers[id]={}; d.prayers[id].notes=v; markUnsaved(); }
+
+function openAddNafl() {
+  const naflNames = ['Fajr Sunnah','Duha','Qiyam al-Layl / Tahajjud','Witr','Dhuhr Sunnah','Asr Sunnah','Maghrib Sunnah','Isha Sunnah','Tarawih','Tahiyyat al-Masjid','Custom…'];
+  document.getElementById('bs-content').innerHTML=`
+    <div class="bs-title">Add Nafl Prayer</div>
+    <div class="fg"><label class="fl">Prayer name</label>
+      <select class="fi" id="nafl-name-sel" onchange="if(this.value==='Custom…')document.getElementById('nafl-custom').style.display='';else document.getElementById('nafl-custom').style.display='none'">
+        ${naflNames.map(n=>`<option value="${n}">${n}</option>`).join('')}
+      </select>
+      <input type="text" class="fi" id="nafl-custom" placeholder="Custom name…" style="display:none;margin-top:8px" />
+    </div>
+    <div class="fg"><label class="fl">Where?</label>
+      <div class="p-status-row">
+        <div class="p-status-btn s-on_time" id="nafl-loc-mosque" onclick="selNaflLoc('mosque')">🕌 Mosque</div>
+        <div class="p-status-btn" id="nafl-loc-home" onclick="selNaflLoc('home')">🏠 Home</div>
+      </div>
+    </div>
+    <div class="fg" id="nafl-timing-row" style="display:none"><label class="fl">Timing</label>
+      <div class="p-status-row">
+        <div class="p-status-btn s-on_time" id="nafl-tim-on" onclick="selNaflTim('on_time')">✓ On time</div>
+        <div class="p-status-btn" id="nafl-tim-late" onclick="selNaflTim('late')">↓ Late</div>
+      </div>
+    </div>
+    <button class="submit-btn" onclick="submitNafl()">Add Nafl</button>`;
+  window._naflLoc='mosque'; window._naflTim='on_time';
+  document.getElementById('bs-bg').classList.add('open');
+}
+function selNaflLoc(loc) {
+  window._naflLoc=loc;
+  document.getElementById('nafl-loc-mosque').className='p-status-btn'+(loc==='mosque'?' s-on_time':'');
+  document.getElementById('nafl-loc-home').className='p-status-btn'+(loc==='home'?' s-late':'');
+  document.getElementById('nafl-timing-row').style.display=loc==='home'?'':'none';
+}
+function selNaflTim(tim) {
+  window._naflTim=tim;
+  document.getElementById('nafl-tim-on').className='p-status-btn'+(tim==='on_time'?' s-on_time':'');
+  document.getElementById('nafl-tim-late').className='p-status-btn'+(tim==='late'?' s-late':'');
+}
+function submitNafl() {
+  const sel = document.getElementById('nafl-name-sel').value;
+  const name = sel==='Custom…' ? (document.getElementById('nafl-custom').value.trim()||'Nafl') : sel;
+  const day = getDay(currentDate);
+  if(!day.nawafil) day.nawafil=[];
+  day.nawafil.push({id:genId(), name, location:window._naflLoc||'mosque', timing:window._naflTim||'on_time', addedAt:currentDate});
+  markUnsaved(); closeBS(); renderSection();
+}
+function setNaflLocation(i, loc) {
+  const d=getDay(currentDate); if(!d.nawafil?.[i]) return;
+  d.nawafil[i].location=loc; if(loc==='mosque') d.nawafil[i].timing='on_time';
+  markUnsaved(); renderSection();
+}
+function setNaflTiming(i, tim) {
+  const d=getDay(currentDate); if(!d.nawafil?.[i]) return;
+  d.nawafil[i].timing=tim; markUnsaved(); renderSection();
+}
+function deleteNafl(i) {
+  const d=getDay(currentDate); if(!d.nawafil) return;
+  d.nawafil.splice(i,1); markUnsaved(); renderSection();
+}
+
+// Legacy setPrayer kept for backwards compat but no longer called
+function setPrayer(id,st) { setPrayerLocation(id, st==='on_time'?'mosque':st==='late'?'home':'not_yet'); }
 
 /* ════════════════════════════════════════════════
    AMAL
@@ -3510,7 +3643,7 @@ function renderAmal(el) {
     const R=22, circ=2*Math.PI*R;
     const offset=circ*(1-pct);
     const complete=cnt>=w.target;
-    h+=`<div class="wird-card">
+    h+=`<div class="wird-card" id="wird-card-${w.id}">
       <div class="wird-text">
         <div class="wird-ar">${esc(w.ar)}</div>
         <div class="wird-en">${esc(w.en)}</div>
@@ -3525,7 +3658,11 @@ function renderAmal(el) {
         </svg>
         <div class="wird-ring-num">${cnt}<span>/${w.target}</span></div>
       </div>
-      <div class="wird-tap ${complete?'done':''}" data-wid="${w.id}" onclick="incrWird('${w.id}')">＋</div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+        <div class="wird-tap ${complete?'done':''}" data-wid="${w.id}" onclick="incrWird('${w.id}')">＋</div>
+        <button onclick="openEditWird('${w.id}')" style="background:none;border:none;color:var(--ink4);font-size:11px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color 0.15s" title="Edit">✎</button>
+        <button onclick="deleteWird('${w.id}')" style="background:none;border:none;color:var(--ink4);font-size:11px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color 0.15s" title="Delete">✕</button>
+      </div>
     </div>`;
   });
   h+=`<button class="add-ghost" onclick="openAddWird()"><span>＋</span> Add wird</button>`;
@@ -3610,6 +3747,32 @@ function submitWird() {
   const target=parseInt(document.getElementById('wt').value)||33;
   DB.wird.push({id:genId(),ar,en,target}); markUnsaved(); closeModal(); renderSection();
 }
+function openEditWird(id) {
+  const w = DB.wird.find(x=>x.id===id); if(!w) return;
+  document.getElementById('modal-content').innerHTML=`
+    <div class="modal-title">Edit wird</div>
+    <div class="fg"><label class="fl">Arabic phrase</label><input type="text" class="fi" id="wa" value="${esc(w.ar)}" style="direction:rtl;font-size:18px" /></div>
+    <div class="fg"><label class="fl">English</label><input type="text" class="fi" id="we" value="${esc(w.en)}" /></div>
+    <div class="fg"><label class="fl">Daily target</label><input type="number" class="fi" id="wt" value="${w.target}" min="1" max="1000" /></div>
+    <div class="modal-footer">
+      <button class="mf-btn" onclick="closeModal()">Cancel</button>
+      <button class="mf-btn pri" onclick="saveEditWird('${id}')">Save</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function saveEditWird(id) {
+  const w = DB.wird.find(x=>x.id===id); if(!w) return;
+  const ar=document.getElementById('wa').value.trim(); if(!ar) return;
+  w.ar = ar;
+  w.en = document.getElementById('we').value.trim();
+  w.target = parseInt(document.getElementById('wt').value)||33;
+  markUnsaved(); closeModal(); renderSection();
+}
+function deleteWird(id) {
+  if(!confirm('Remove this wird?')) return;
+  DB.wird = DB.wird.filter(x=>x.id!==id);
+  markUnsaved(); renderSection();
+}
 function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
 
 /* ════════════════════════════════════════════════
@@ -3645,13 +3808,15 @@ function setSijjilMode(mode) { sijjilMode = mode; renderSection(); }
 /* ── Write mode ── */
 function renderSijjilWrite(el, dateLabel) {
   const day = getDay(currentDate);
-  if(!day.journal) day.journal = { text:'', tags:[], images:[] };
+  if(!day.journal) day.journal = { text:'', tags:[], images:[], videos:[] };
   if(day.journal.free !== undefined && !day.journal.text) {
     day.journal.text = [day.journal.shukr||'', day.journal.amal||'', day.journal.azm||'', day.journal.free||''].filter(Boolean).join('\n\n');
   }
   const j = day.journal;
   const images = j.images || [];
+  const videos = j.videos || [];
   const wordCount = (j.text||'').trim().split(/\s+/).filter(Boolean).length;
+  const mediaCount = images.length + videos.length;
 
   const wrap = document.createElement('div');
 
@@ -3674,28 +3839,38 @@ function renderSijjilWrite(el, dateLabel) {
     <div class="sj-gallery-wrap">
       <div class="sj-gallery-header">
         <span class="sj-gallery-label">
-          Photos ${images.length ? `<span class="sj-gallery-count">${images.length}</span>` : ''}
+          Media ${mediaCount ? `<span class="sj-gallery-count">${mediaCount}</span>` : ''}
         </span>
-        <button class="sj-add-btn">
-          📷 Add photo
-          <input type="file" accept="image/*" multiple onchange="sjImgPick(event)" />
-        </button>
+        <div style="display:flex;gap:6px">
+          <button class="sj-add-btn">
+            📷 Photo
+            <input type="file" accept="image/*" multiple onchange="sjImgPick(event)" />
+          </button>
+          <button class="sj-add-btn">
+            🎬 Video
+            <input type="file" accept="video/*" multiple onchange="sjVideoPick(event)" />
+          </button>
+        </div>
       </div>
-      <div class="sj-gallery-body">
-        ${images.length
+      <div class="sj-gallery-body" id="sj-gallery-body">
+        ${mediaCount
           ? `<div class="sj-grid" id="sj-grid">
               ${images.map((img,i) => `
-                <div class="sj-gitem" data-drive-id="${esc(img.driveId||'')}" onclick="openJLightbox('${esc(img.driveId||'')}')">
+                <div class="sj-gitem" data-drive-id="${esc(img.driveId||'')}" onclick="openJLightbox('${esc(img.driveId||'')}','image')">
                   <div class="sj-gitem-loader">🖼</div>
                   <button class="sj-gitem-del" onclick="event.stopPropagation();sjDeleteImg(${i})" title="Remove">✕</button>
+                </div>`).join('')}
+              ${videos.map((vid,i) => `
+                <div class="sj-gitem" data-drive-id="${esc(vid.driveId||'')}" data-type="video" onclick="openJLightbox('${esc(vid.driveId||'')}','video')">
+                  <div class="sj-gitem-loader" style="flex-direction:column;gap:4px">🎬<span style="font-size:10px;opacity:0.5">${esc(vid.name||'')}</span></div>
+                  <button class="sj-gitem-del" onclick="event.stopPropagation();sjDeleteVideo(${i})" title="Remove">✕</button>
                 </div>`).join('')}
              </div>`
           : `<div class="sj-drop" id="sj-drop"
                ondragover="sjDropOver(event)" ondragleave="sjDropLeave(event)" ondrop="sjDropDrop(event)">
                <div class="sj-drop-icon">🖼</div>
-               <div class="sj-drop-text">Add photos to this entry</div>
-               <div class="sj-drop-sub">Click to browse or drag &amp; drop</div>
-               <input type="file" accept="image/*" multiple onchange="sjImgPick(event)" />
+               <div class="sj-drop-text">Add photos or videos to this entry</div>
+               <div class="sj-drop-sub">Click buttons above or drag &amp; drop</div>
              </div>`
         }
       </div>
@@ -3706,6 +3881,7 @@ function renderSijjilWrite(el, dateLabel) {
   const ta = document.getElementById('sj-ta');
   if(ta) { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
 
+  // Load images in write mode immediately (they're small thumbnails)
   if(images.length && gdriveToken) {
     images.forEach(img => {
       if(!img.driveId) return;
@@ -3724,11 +3900,10 @@ function renderSijjilWrite(el, dateLabel) {
 
 /* ── Time Machine ── */
 function renderTimeMachine(el) {
-  // Gather all days that have journal content or images, sorted newest first
   const allDates = Object.keys(DB.days)
     .filter(ds => {
       const j = DB.days[ds]?.journal;
-      return j && (j.text?.trim() || (j.images && j.images.length > 0) || (j.free?.trim()));
+      return j && (j.text?.trim() || (j.images && j.images.length > 0) || (j.videos && j.videos.length > 0) || (j.free?.trim()));
     })
     .sort((a,b) => b.localeCompare(a));
 
@@ -3744,6 +3919,16 @@ function renderTimeMachine(el) {
     return;
   }
 
+  // Load Media button — appears at top of memories view
+  const loadMediaBtn = document.createElement('button');
+  loadMediaBtn.id = 'load-media-btn';
+  loadMediaBtn.innerHTML = '🖼 Load Media';
+  loadMediaBtn.style.cssText = 'display:block;margin:0 auto 24px;background:var(--surface);border:1.5px solid var(--border);border-radius:50px;padding:10px 28px;font-family:var(--sans);font-size:13px;font-weight:500;color:var(--ink3);cursor:pointer;box-shadow:var(--shadow-sm);transition:all 0.2s';
+  loadMediaBtn.onmouseover = () => { loadMediaBtn.style.borderColor='var(--gold)'; loadMediaBtn.style.color='var(--gold)'; };
+  loadMediaBtn.onmouseout  = () => { loadMediaBtn.style.borderColor='var(--border)'; loadMediaBtn.style.color='var(--ink3)'; };
+  loadMediaBtn.onclick = () => loadAllMedia(allDates);
+  wrap.appendChild(loadMediaBtn);
+
   // Group by month
   const byMonth = {};
   allDates.forEach(ds => {
@@ -3753,7 +3938,6 @@ function renderTimeMachine(el) {
     byMonth[key].push(ds);
   });
 
-  // Render month by month
   Object.entries(byMonth).forEach(([monthKey, dates]) => {
     const [y, m] = monthKey.split('-');
     const monthLabel = new Date(`${y}-${m}-01T12:00:00`).toLocaleDateString('en-US',{month:'long', year:'numeric'});
@@ -3767,19 +3951,20 @@ function renderTimeMachine(el) {
       const day = DB.days[ds];
       const j = day?.journal || {};
       const images = j.images || [];
+      const videos = j.videos || [];
+      const mediaCount = images.length + videos.length;
       const text = j.text || j.free || '';
       const tags = j.tags || [];
       const d = new Date(ds+'T12:00:00');
       const dayLabel = d.toLocaleDateString('en-US',{weekday:'short', day:'numeric'});
       const isToday = ds === todayStr();
-
       const snippet = text.trim().slice(0, 80) + (text.trim().length > 80 ? '…' : '');
 
       html += `<div class="tm-card ${isToday?'is-today':''}" onclick="tmGoDay('${ds}')">
         <div class="tm-card-img" id="tmc-${ds}">
-          ${images.length
-            ? `<div class="sj-gitem-loader" style="opacity:0.15">🖼</div>
-               ${images.length > 1 ? `<div class="tm-card-img-count">+${images.length}</div>` : ''}`
+          ${mediaCount
+            ? `<div class="sj-gitem-loader" style="opacity:0.15">${videos.length?'🎬':'🖼'}</div>
+               ${mediaCount > 1 ? `<div class="tm-card-img-count">+${mediaCount}</div>` : ''}`
             : `<div class="tm-card-img-placeholder">📝</div>`
           }
         </div>
@@ -3794,25 +3979,35 @@ function renderTimeMachine(el) {
     html += `</div>`;
     block.innerHTML = html;
     wrap.appendChild(block);
-
-    // Load first image of each card async
-    if(gdriveToken) {
-      dates.forEach(ds => {
-        const j = DB.days[ds]?.journal;
-        const img = j?.images?.[0];
-        if(!img?.driveId) return;
-        getDriveImgUrl(img.driveId).then(url => {
-          if(!url) return;
-          const container = document.getElementById(`tmc-${ds}`);
-          if(!container) return;
-          container.innerHTML = `<img src="${url}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" />
-            ${(j.images.length > 1) ? `<div class="tm-card-img-count">+${j.images.length}</div>` : ''}`;
-        }).catch(()=>{});
-      });
-    }
   });
 
   el.appendChild(wrap);
+}
+
+async function loadAllMedia(allDates) {
+  const btn = document.getElementById('load-media-btn');
+  if(btn) { btn.textContent='Loading…'; btn.disabled=true; }
+  if(!gdriveToken) { if(btn){btn.textContent='🖼 Load Media';btn.disabled=false;} alert('Connect to Google Drive first.'); return; }
+
+  for(const ds of allDates) {
+    const j = DB.days[ds]?.journal;
+    const img = j?.images?.[0];
+    if(img?.driveId) {
+      getDriveImgUrl(img.driveId).then(url => {
+        if(!url) return;
+        const container = document.getElementById(`tmc-${ds}`);
+        if(!container) return;
+        const imgCount = (j.images?.length||0) + (j.videos?.length||0);
+        container.innerHTML = `<img src="${url}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" />
+          ${imgCount > 1 ? `<div class="tm-card-img-count">+${imgCount}</div>` : ''}`;
+      }).catch(()=>{});
+    } else if((j?.videos||[]).length > 0) {
+      // Show video placeholder
+      const container = document.getElementById(`tmc-${ds}`);
+      if(container) container.innerHTML = `<div class="tm-card-img-placeholder" style="opacity:0.5;font-size:36px">🎬</div>`;
+    }
+  }
+  if(btn) { btn.textContent='✓ Media loaded'; btn.style.color='var(--green)'; btn.style.borderColor='var(--green)'; }
 }
 
 function tmGoDay(dateStr) {
@@ -3855,12 +4050,16 @@ function sjRemoveTag(t) {
 
 /* ── Sijjil images ── */
 function sjImgPick(e) { Array.from(e.target.files).forEach(f => sjUploadImg(f)); e.target.value = ''; }
+function sjVideoPick(e) { Array.from(e.target.files).forEach(f => sjUploadVideo(f)); e.target.value = ''; }
 function sjDropOver(e) { e.preventDefault(); document.getElementById('sj-drop')?.classList.add('drag-over'); }
 function sjDropLeave(e) { document.getElementById('sj-drop')?.classList.remove('drag-over'); }
 function sjDropDrop(e) {
   e.preventDefault();
   document.getElementById('sj-drop')?.classList.remove('drag-over');
-  Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).forEach(sjUploadImg);
+  Array.from(e.dataTransfer.files).forEach(f => {
+    if(f.type.startsWith('image/')) sjUploadImg(f);
+    else if(f.type.startsWith('video/')) sjUploadVideo(f);
+  });
 }
 
 async function sjUploadImg(file) {
@@ -3886,7 +4085,37 @@ async function sjUploadImg(file) {
     markUnsaved(); renderSection();
   } catch(e) {
     alert('Upload failed: ' + e.message);
-    if(dropText) dropText.textContent = 'Add photos to this entry';
+    if(dropText) dropText.textContent = 'Add photos or videos to this entry';
+  }
+}
+
+async function sjUploadVideo(file) {
+  if(!file.type.startsWith('video/')) return;
+  if(!gdriveToken) { alert('Connect to Google Drive first.'); return; }
+  const gallery = document.getElementById('sj-gallery-body');
+  const uploadMsg = document.createElement('div');
+  uploadMsg.style.cssText='text-align:center;padding:12px;font-size:13px;color:var(--ink3)';
+  uploadMsg.textContent = `Uploading video: ${file.name}…`;
+  if(gallery) gallery.appendChild(uploadMsg);
+  try {
+    const folderId = await getOrCreateDayVideoFolder(currentDate);
+    const fm = new FormData();
+    fm.append('metadata', new Blob([JSON.stringify({ name: file.name, parents: [folderId] })], { type: 'application/json' }));
+    fm.append('file', file);
+    const res = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
+      { method: 'POST', headers: { Authorization: 'Bearer ' + gdriveToken }, body: fm }
+    );
+    if(!res.ok) throw new Error('Upload failed: ' + res.status);
+    const uploaded = await res.json();
+    const d = getDay(currentDate);
+    if(!d.journal) d.journal = {};
+    if(!d.journal.videos) d.journal.videos = [];
+    d.journal.videos.push({ driveId: uploaded.id, name: uploaded.name, addedAt: new Date().toISOString(), type: file.type });
+    markUnsaved(); renderSection();
+  } catch(e) {
+    alert('Video upload failed: ' + e.message);
+    uploadMsg?.remove();
   }
 }
 
@@ -3902,27 +4131,54 @@ async function sjDeleteImg(idx) {
   markUnsaved(); renderSection();
 }
 
-/* ── Drive image display ── */
-async function getDriveImgUrl(driveId) {
+async function sjDeleteVideo(idx) {
+  const d = getDay(currentDate);
+  if(!d.journal?.videos) return;
+  if(!confirm('Remove this video?')) return;
+  const vid = d.journal.videos[idx];
+  if(vid.driveId && gdriveToken) {
+    try { await fetch(`https://www.googleapis.com/drive/v3/files/${vid.driveId}`, { method:'DELETE', headers:{ Authorization:'Bearer '+gdriveToken } }); } catch(e) {}
+  }
+  d.journal.videos.splice(idx, 1);
+  markUnsaved(); renderSection();
+}
+
+/* ── Drive media display (images + videos) ── */
+async function getDriveMediaUrl(driveId) {
   if(!gdriveToken) return null;
   const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveId}?alt=media`, { headers:{ Authorization:'Bearer '+gdriveToken } });
   if(!res.ok) return null;
   return URL.createObjectURL(await res.blob());
 }
+// alias for backwards compat
+const getDriveImgUrl = getDriveMediaUrl;
 
-async function openJLightbox(driveId) {
+async function openJLightbox(driveId, type='image') {
   if(!driveId) return;
   const lb = document.getElementById('j-lightbox');
   const imgEl = document.getElementById('j-lightbox-img');
-  if(!lb||!imgEl) return;
-  imgEl.src = ''; lb.classList.add('open'); document.body.style.overflow = 'hidden';
-  const url = await getDriveImgUrl(driveId);
-  if(url) imgEl.src = url;
+  const vidEl = document.getElementById('j-lightbox-vid');
+  if(!lb) return;
+  lb.classList.add('open'); document.body.style.overflow = 'hidden';
+
+  if(type === 'video') {
+    if(imgEl) imgEl.style.display = 'none';
+    if(vidEl) { vidEl.style.display = 'block'; vidEl.src = ''; }
+    const url = await getDriveMediaUrl(driveId);
+    if(url && vidEl) vidEl.src = url;
+  } else {
+    if(vidEl) { vidEl.style.display = 'none'; vidEl.src = ''; }
+    if(imgEl) { imgEl.style.display = 'block'; imgEl.src = ''; }
+    const url = await getDriveMediaUrl(driveId);
+    if(url && imgEl) imgEl.src = url;
+  }
 }
 function closeJLightbox() {
   const lb = document.getElementById('j-lightbox');
   const imgEl = document.getElementById('j-lightbox-img');
+  const vidEl = document.getElementById('j-lightbox-vid');
   if(imgEl?.src?.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
+  if(vidEl?.src?.startsWith('blob:')) { vidEl.pause(); URL.revokeObjectURL(vidEl.src); vidEl.src=''; }
   lb?.classList.remove('open'); document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => {
@@ -3958,13 +4214,19 @@ async function _findOrMakeFolder(name, parentId) {
 
 async function getRaqibRoot() {
   if(_raqibRootId) return _raqibRootId;
-  const q = `name='Raqib' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  // Try SaadOs folder first, then fall back to old Raqib folder for migration
+  const q = `name='SaadOs' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
   const r = await _driveGet(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`);
   const d = await r.json();
   if(d.files?.[0]?.id) { _raqibRootId = d.files[0].id; return _raqibRootId; }
+  // Also check legacy 'Raqib' folder
+  const q2 = `name='Raqib' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const r2 = await _driveGet(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q2)}&fields=files(id)`);
+  const d2 = await r2.json();
+  if(d2.files?.[0]?.id) { _raqibRootId = d2.files[0].id; return _raqibRootId; }
   const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
     method:'POST', headers:{ Authorization:'Bearer '+gdriveToken, 'Content-Type':'application/json' },
-    body: JSON.stringify({ name:'Raqib', mimeType:'application/vnd.google-apps.folder' }),
+    body: JSON.stringify({ name:'SaadOs', mimeType:'application/vnd.google-apps.folder' }),
   });
   _raqibRootId = (await cr.json()).id;
   return _raqibRootId;
@@ -3981,13 +4243,23 @@ async function getDayFolder(dateStr) {
   return dayId;
 }
 
-// Raqib/YYYY/YYYY-MM-DD/Images
+// SaadOs/YYYY/YYYY-MM-DD/Images
 async function getOrCreateDayImgFolder(dateStr) {
   if(_dayImgFolderCache[dateStr]) return _dayImgFolderCache[dateStr];
   const dayId = await getDayFolder(dateStr);
   const imgId = await _findOrMakeFolder('Images', dayId);
   _dayImgFolderCache[dateStr] = imgId;
   return imgId;
+}
+
+// SaadOs/YYYY/YYYY-MM-DD/Videos
+const _dayVideoFolderCache = {};
+async function getOrCreateDayVideoFolder(dateStr) {
+  if(_dayVideoFolderCache[dateStr]) return _dayVideoFolderCache[dateStr];
+  const dayId = await getDayFolder(dateStr);
+  const vidId = await _findOrMakeFolder('Videos', dayId);
+  _dayVideoFolderCache[dateStr] = vidId;
+  return vidId;
 }
 
 async function _findFileInFolder(name, parentId) {
@@ -4026,7 +4298,7 @@ async function pushDayData(dateStr, dayData) {
   const folderId = await getDayFolder(dateStr);
   const existingId = await _findFileInFolder('data.json', folderId);
   await _upsertJsonFile('data.json', folderId,
-    { _meta:{ version:3, app:'raqib', date:dateStr, savedAt:new Date().toISOString() }, ...dayData },
+    { _meta:{ version:3, app:'saados', date:dateStr, savedAt:new Date().toISOString() }, ...dayData },
     existingId
   );
 }
@@ -4037,7 +4309,7 @@ async function pushProfile() {
   const rootId = await getRaqibRoot();
   const existingId = await _findFileInFolder('profile.json', rootId);
   await _upsertJsonFile('profile.json', rootId, {
-    _meta:{ version:3, app:'raqib', savedAt:new Date().toISOString() },
+    _meta:{ version:3, app:'saados', savedAt:new Date().toISOString() },
     profile:DB.profile, practices:DB.practices, wird:DB.wird,
     onboarded:DB.onboarded, gdrive:{ clientId:DB.gdrive.clientId, lastSync:DB.gdrive.lastSync },
   }, existingId);
@@ -4056,6 +4328,7 @@ async function drivePush() {
       niyyah:day.niyyah||'', tasks:day.tasks||[], prayers:day.prayers||{},
       wirdCounts:day.wirdCounts||{}, practicesDone:day.practicesDone||{},
       journal:day.journal||{}, focusTime:day.focusTime||{}, totalFocusSec:day.totalFocusSec||0,
+      nawafil:day.nawafil||[],
     });
   }
   _pendingDays.clear();
@@ -4067,7 +4340,7 @@ async function drivePull(silent=false) {
   try {
     const rootId = await getRaqibRoot();
 
-    // load profile
+    // load profile (JSON only)
     const profileId = await _findFileInFolder('profile.json', rootId);
     if(profileId) {
       const p = await _fetchJsonFile(profileId);
@@ -4081,12 +4354,13 @@ async function drivePull(silent=false) {
       }
     }
 
-    // scan Raqib/YYYY/YYYY-MM-DD/data.json
+    // scan SaadOs/YYYY/YYYY-MM-DD/data.json ONLY — no images, no videos
     const years = await _listFolders(rootId);
     for(const yr of years) {
       const dayFolders = await _listFolders(yr.id);
       for(const df of dayFolders) {
         if(!/^\d{4}-\d{2}-\d{2}$/.test(df.name)) continue;
+        // Only fetch data.json — intentionally skip Images/Videos subfolders
         const dataId = await _findFileInFolder('data.json', df.id);
         if(!dataId) continue;
         const dd = await _fetchJsonFile(dataId);
@@ -4094,8 +4368,9 @@ async function drivePull(silent=false) {
         DB.days[df.name] = {
           niyyah:dd.niyyah||'', tasks:dd.tasks||[], prayers:dd.prayers||{},
           wirdCounts:dd.wirdCounts||{}, practicesDone:dd.practicesDone||{},
-          journal:dd.journal||{ text:'', tags:[], images:[] },
+          journal:dd.journal||{ text:'', tags:[], images:[], videos:[] },
           focusTime:dd.focusTime||{}, totalFocusSec:dd.totalFocusSec||0,
+          nawafil:dd.nawafil||[],
         };
         _dayFolderCache[df.name] = df.id;
       }
@@ -4245,9 +4520,15 @@ function renderMizan(el) {
       const dayNum   = d.getDate();
       let prayerDots='';
       PRAYERS.forEach(pr=>{
-        const st=dd?.prayers?.[pr.id]?.status||'none';
-        const cls=st==='on_time'?'on':st==='late'?'late':st==='missed'?'miss':'';
-        prayerDots+=`<div class="mz-prayer-dot ${cls}" title="${pr.en}: ${st}"></div>`;
+        const prd=dd?.prayers?.[pr.id]||{};
+        let cls='';
+        if(prd.location==='mosque') cls='on';
+        else if(prd.location==='home'&&prd.timing==='on_time') cls='on';
+        else if(prd.location==='home'&&prd.timing==='late') cls='late';
+        else if(prd.status==='on_time') cls='on'; // legacy
+        else if(prd.status==='late') cls='late';
+        else if(prd.status==='missed') cls='miss';
+        prayerDots+=`<div class="mz-prayer-dot ${cls}" title="${pr.en}"></div>`;
       });
       const tasks=dd?.tasks||[];
       const tdone=tasks.filter(t=>t.done).length;
@@ -4291,6 +4572,62 @@ function renderMizan(el) {
           <div class="mz-streak-current">🔥${s}</div>
           <div class="mz-streak-best">best ${best}</div>
         </div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+
+  /* ── NAWAFIL ANALYTICS ── */
+  if(ws.nawafilTotal > 0) {
+    // Count nawafil per day for the period
+    const nawafilByDay = [];
+    for(let i=days-1;i>=0;i--){
+      const d2=new Date(today); d2.setDate(d2.getDate()-i);
+      const ds=d2.toISOString().split('T')[0];
+      const dd=getDayRO(ds);
+      nawafilByDay.push({date:ds, count:(dd?.nawafil||[]).length});
+    }
+    const nawafilNames = {};
+    for(let i=days-1;i>=0;i--){
+      const d2=new Date(today); d2.setDate(d2.getDate()-i);
+      const ds=d2.toISOString().split('T')[0];
+      const dd=getDayRO(ds);
+      (dd?.nawafil||[]).forEach(nf=>{ nawafilNames[nf.name]=(nawafilNames[nf.name]||0)+1; });
+    }
+    const topNawafil = Object.entries(nawafilNames).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    h+=`<div class="mz-section">
+      <div class="mz-section-title">Nawafil — نوافل · ${ws.nawafilTotal} total</div>`;
+    topNawafil.forEach(([name, cnt])=>{
+      const pct = Math.round(cnt/days*100);
+      h+=`<div class="mz-streak-item">
+        <div class="mz-streak-emoji">🕌</div>
+        <div class="mz-streak-info">
+          <div class="mz-streak-name">${esc(name)}</div>
+          <div class="mz-streak-bar-wrap"><div class="mz-streak-bar" style="width:${Math.min(pct,100)}%;background:var(--gold)"></div></div>
+        </div>
+        <div class="mz-streak-nums">
+          <div class="mz-streak-current" style="font-size:16px">${cnt}×</div>
+          <div class="mz-streak-best">${periodLabel}</div>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+
+  /* ── WEEKLY UNFINISHED TASKS ── */
+  const weekUnfinished = getWeekUnfinishedTasks();
+  if(weekUnfinished.length) {
+    h+=`<div class="mz-section">
+      <div class="mz-section-title">This week — unfinished tasks</div>`;
+    weekUnfinished.forEach(t=>{
+      h+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:16px;opacity:0.4">○</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;color:var(--text)">${esc(t.name)}</div>
+          ${t.note?`<div style="font-size:11px;color:var(--text4);margin-top:1px">${esc(t.note)}</div>`:''}
+          <div style="font-size:10px;color:var(--text4);margin-top:2px">From ${new Date(t.fromDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div>
+        </div>
+        <div style="font-size:11px;color:var(--rust);white-space:nowrap">${t.days}d ago</div>
       </div>`;
     });
     h+=`</div>`;
@@ -4387,11 +4724,23 @@ function getPeriodStats(days) {
   const today=new Date(todayStr()+'T12:00:00');
   let po=0,pt=0,td=0,tt=0,pd=0,prt=0;
   let plannedFocusSec=0, actualFocusSec=0;
+  let nawafilTotal=0, nawafilDone=0;
   for(let i=days-1;i>=0;i--){
     const d=new Date(today); d.setDate(d.getDate()-i);
     const ds=d.toISOString().split('T')[0];
     const day=getDayRO(ds); if(!day) continue;
-    PRAYERS.forEach(p=>{ pt++; if(day.prayers?.[p.id]?.status==='on_time') po++; });
+    // New prayer model: mosque = on_time, home+on_time = on_time
+    PRAYERS.forEach(p=>{
+      pt++;
+      const pr=day.prayers?.[p.id]||{};
+      if(pr.location==='mosque'||(pr.location==='home'&&pr.timing==='on_time')) po++;
+      // legacy support
+      else if(pr.status==='on_time') po++;
+    });
+    // Count nawafil
+    (day.nawafil||[]).forEach(nf=>{
+      nawafilDone++;
+    });
     (day.tasks||[]).forEach(t=>{
       tt++;
       if(t.done) td++;
@@ -4410,6 +4759,7 @@ function getPeriodStats(days) {
     plannedFocusMin: Math.round(plannedFocusSec/60),
     actualFocusMin:  Math.round(actualFocusSec/60),
     focusRatio,
+    nawafilTotal: nawafilDone,
   };
 }
 // keep backward compat alias
@@ -4453,16 +4803,22 @@ function drawPrayerHeatmap(cols) {
     const ds=d.toISOString().split('T')[0];
     const dd=getDayRO(ds);
     PRAYERS.forEach((p,row)=>{
-      const st=dd?.prayers?.[p.id]?.status||'none';
+      const pr=dd?.prayers?.[p.id]||{};
+      // new model: mosque or home+on_time = green; home+late = gold; else empty
+      let fillColor = emptyC;
+      if(pr.location==='mosque') fillColor = styles.getPropertyValue('--green').trim()||'#2a5438';
+      else if(pr.location==='home'&&pr.timing==='on_time') fillColor = styles.getPropertyValue('--green').trim()||'#2a5438';
+      else if(pr.location==='home'&&pr.timing==='late') fillColor = styles.getPropertyValue('--gold').trim()||'#b07818';
+      // legacy support
+      else if(pr.status==='on_time') fillColor = styles.getPropertyValue('--green').trim()||'#2a5438';
+      else if(pr.status==='late')    fillColor = styles.getPropertyValue('--gold').trim()||'#b07818';
+      else if(pr.status==='missed')  fillColor = styles.getPropertyValue('--rust').trim()||'#8a3828';
       const x=labelW+col*(cellW+gap);
       const y=row*(cellH+gap);
       ctx.beginPath();
       if(ctx.roundRect) ctx.roundRect(x,y,cellW,cellH,2);
       else ctx.rect(x,y,cellW,cellH);
-      ctx.fillStyle = st==='on_time' ? styles.getPropertyValue('--green').trim()||'#2a5438'
-                    : st==='late'    ? styles.getPropertyValue('--gold').trim()||'#b07818'
-                    : st==='missed'  ? styles.getPropertyValue('--rust').trim()||'#8a3828'
-                    : emptyC;
+      ctx.fillStyle = fillColor;
       ctx.fill();
     });
   }
@@ -4767,7 +5123,7 @@ function setTheme(t) {
 function exportData() {
   const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
   const u=URL.createObjectURL(b);
-  const a=document.createElement('a'); a.href=u; a.download='raqib-data.json'; a.click(); URL.revokeObjectURL(u);
+  const a=document.createElement('a'); a.href=u; a.download='saados-data.json'; a.click(); URL.revokeObjectURL(u);
 }
 function importData() { document.getElementById('s-import').click(); }
 function doImport(e) {
