@@ -3209,20 +3209,6 @@ function renderNiyyah(el) {
   });
   h += `</div>`;
 
-  const deferred = getDeferredTasks();
-  if(deferred.length) {
-    h+=`<div class="deferred-section" style="margin-top:16px"><div class="deferred-head" onclick="toggleDeferred()">
-      ↩ Carried forward (${deferred.length}) <span id="def-tog" style="margin-left:auto">▾</span>
-    </div><div id="def-body">`;
-    deferred.forEach(t=>{
-      h+=`<div style="padding:10px 18px;border-bottom:1px solid var(--cream)">
-        <div style="font-size:13px;font-weight:500">${esc(t.name)}</div>
-        <div style="font-size:11px;color:var(--ink4);margin-top:2px">From ${t.fromDate} · ${t.days} day${t.days>1?'s':''} ago</div>
-      </div>`;
-    });
-    h+=`</div></div>`;
-  }
-
   el.innerHTML = h;
   el.querySelector('#niyyah-text').addEventListener('input',e=>{
     getDay(currentDate).niyyah=e.target.value; markUnsaved();
@@ -3261,6 +3247,26 @@ function getDeferredTasks() {
     (day.tasks||[]).forEach(t=>{ if(!t.done) res.push({...t,fromDate:ds,days:Math.round((today-d)/86400000)}); });
   });
   return res.slice(0,10);
+}
+
+function getThisWeekIncompleteTasks() {
+  // Mon–Sun week containing today
+  const todayDate = new Date(todayStr()+'T12:00:00');
+  const dow = todayDate.getDay(); // 0=Sun
+  const monday = new Date(todayDate);
+  monday.setDate(todayDate.getDate() - ((dow+6)%7)); // shift to Monday
+  const res = [];
+  for(let i=0; i<7; i++) {
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    if(d > todayDate) break; // only past/today days
+    const ds = d.toISOString().split('T')[0];
+    const day = getDayRO(ds);
+    if(!day) continue;
+    (day.tasks||[]).forEach(t => {
+      if(!t.done) res.push({...t, fromDate:ds});
+    });
+  }
+  return res;
 }
 
 /* ════════════════════════════════════════════════
@@ -3397,13 +3403,21 @@ function renderSalat(el) {
   <div class="prayer-line"></div>`;
 
   PRAYERS.forEach(p=>{
-    const st=day.prayers[p.id]?.status||'not_yet';
-    const notes=day.prayers[p.id]?.notes||'';
-    const lbl={on_time:'On time',late:'Late',missed:'Missed',not_yet:'Not yet'}[st];
+    const pr=day.prayers[p.id]||{};
+    const st=pr.status||'not_yet';
+    const loc=pr.location||'';
+    const notes=pr.notes||'';
+    // Badge label: mosque → "Mosque", home+on_time → "Home · On time", etc.
+    const statusLabels={on_time:'On time',late:'Late',missed:'Missed',not_yet:'Not yet'};
+    let lbl;
+    if(st==='not_yet') lbl='Not yet';
+    else if(loc==='mosque') lbl='Mosque';
+    else if(loc==='home') lbl=`Home · ${statusLabels[st]||st}`;
+    else lbl=statusLabels[st]||st;
     const dot=st==='on_time'?'✓':st==='late'?'↓':st==='missed'?'✕':'·';
     h+=`<div class="prayer-item">
       <div class="prayer-dot-wrap"><div class="prayer-dot ${st!=='not_yet'?st:''}">${dot}</div></div>
-      <div class="prayer-card ${''}" id="pc-${p.id}">
+      <div class="prayer-card" id="pc-${p.id}">
         <div class="p-header" onclick="togglePrayer('${p.id}')">
           <span class="p-name">${p.en}</span>
           <span class="p-ar">${p.ar}</span>
@@ -3411,12 +3425,22 @@ function renderSalat(el) {
           <span class="p-caret">▾</span>
         </div>
         <div class="p-expand">
-          <div class="p-status-row">
-            <div class="p-status-btn ${st==='on_time'?'s-on_time':''}" onclick="setPrayer('${p.id}','on_time')">✓ On time</div>
-            <div class="p-status-btn ${st==='late'?'s-late':''}"    onclick="setPrayer('${p.id}','late')">↓ Late</div>
-            <div class="p-status-btn ${st==='missed'?'s-missed':''}" onclick="setPrayer('${p.id}','missed')">✕ Missed</div>
-            <div class="p-status-btn" onclick="setPrayer('${p.id}','not_yet')">○ Reset</div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:6px">Location</div>
+            <div class="p-status-row" style="margin-bottom:0">
+              <div class="p-status-btn ${loc==='mosque'?'s-on_time':''}" onclick="setPrayerLocation('${p.id}','mosque')">🕌 Mosque</div>
+              <div class="p-status-btn ${loc==='home'?'s-late':''}" onclick="setPrayerLocation('${p.id}','home')">🏠 Home</div>
+            </div>
           </div>
+          ${loc!=='mosque'?`<div style="margin-bottom:10px">
+            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:6px">Status</div>
+            <div class="p-status-row" style="margin-bottom:0">
+              <div class="p-status-btn ${st==='on_time'?'s-on_time':''}" onclick="setPrayer('${p.id}','on_time')">✓ On time</div>
+              <div class="p-status-btn ${st==='late'?'s-late':''}" onclick="setPrayer('${p.id}','late')">↓ Late</div>
+              <div class="p-status-btn ${st==='missed'?'s-missed':''}" onclick="setPrayer('${p.id}','missed')">✕ Missed</div>
+              <div class="p-status-btn" onclick="setPrayer('${p.id}','not_yet')">○ Reset</div>
+            </div>
+          </div>`:`<div style="font-size:12px;color:var(--green);padding:6px 0;margin-bottom:8px">✓ Prayed in congregation</div>`}
           <textarea class="p-notes" placeholder="Notes, adhkar…"
             onchange="savePrayerNotes('${p.id}',this.value)">${esc(notes)}</textarea>
         </div>
@@ -3443,7 +3467,23 @@ function renderSalat(el) {
   el.innerHTML=h;
 }
 function togglePrayer(id) { document.getElementById('pc-'+id).classList.toggle('open'); }
-function setPrayer(id,st) { const d=getDay(currentDate); if(!d.prayers) d.prayers={}; if(!d.prayers[id]) d.prayers[id]={}; d.prayers[id].status=st; markUnsaved(); renderSection(); }
+function setPrayer(id,st) {
+  const d=getDay(currentDate); if(!d.prayers) d.prayers={};
+  if(!d.prayers[id]) d.prayers[id]={};
+  d.prayers[id].status=st;
+  // If resetting, also clear location
+  if(st==='not_yet') d.prayers[id].location='';
+  markUnsaved(); renderSection();
+}
+function setPrayerLocation(id,loc) {
+  const d=getDay(currentDate); if(!d.prayers) d.prayers={};
+  if(!d.prayers[id]) d.prayers[id]={};
+  d.prayers[id].location=loc;
+  // Mosque auto-sets on_time; Home keeps current status or defaults to on_time
+  if(loc==='mosque') d.prayers[id].status='on_time';
+  else if(!d.prayers[id].status||d.prayers[id].status==='not_yet') d.prayers[id].status='on_time';
+  markUnsaved(); renderSection();
+}
 function savePrayerNotes(id,v) { const d=getDay(currentDate); if(!d.prayers) d.prayers={}; if(!d.prayers[id]) d.prayers[id]={}; d.prayers[id].notes=v; markUnsaved(); }
 
 /* ════════════════════════════════════════════════
@@ -3526,6 +3566,10 @@ function renderAmal(el) {
         <div class="wird-ring-num">${cnt}<span>/${w.target}</span></div>
       </div>
       <div class="wird-tap ${complete?'done':''}" data-wid="${w.id}" onclick="incrWird('${w.id}')">＋</div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-left:2px">
+        <button style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;transition:color 0.15s" onclick="openEditWird('${w.id}')" title="Edit">✎</button>
+        <button style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:12px;padding:3px 5px;border-radius:4px;transition:color 0.15s" onclick="deleteWird('${w.id}')" title="Remove">✕</button>
+      </div>
     </div>`;
   });
   h+=`<button class="add-ghost" onclick="openAddWird()"><span>＋</span> Add wird</button>`;
@@ -3609,6 +3653,32 @@ function submitWird() {
   const en=document.getElementById('we').value.trim();
   const target=parseInt(document.getElementById('wt').value)||33;
   DB.wird.push({id:genId(),ar,en,target}); markUnsaved(); closeModal(); renderSection();
+}
+function openEditWird(id) {
+  const w=DB.wird.find(x=>x.id===id); if(!w) return;
+  document.getElementById('modal-content').innerHTML=`
+    <div class="modal-title">Edit wird</div>
+    <div class="fg"><label class="fl">Arabic phrase</label><input type="text" class="fi" id="wa" value="${esc(w.ar)}" placeholder="لا إله إلا الله" style="direction:rtl;font-size:18px" /></div>
+    <div class="fg"><label class="fl">English</label><input type="text" class="fi" id="we" value="${esc(w.en)}" placeholder="La ilaha illallah" /></div>
+    <div class="fg"><label class="fl">Daily target</label><input type="number" class="fi" id="wt" value="${w.target}" min="1" max="1000" /></div>
+    <div class="modal-footer">
+      <button class="mf-btn" onclick="closeModal()">Cancel</button>
+      <button class="mf-btn pri" onclick="submitEditWird('${id}')">Save</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function submitEditWird(id) {
+  const w=DB.wird.find(x=>x.id===id); if(!w) return;
+  const ar=document.getElementById('wa').value.trim(); if(!ar) return;
+  w.ar=ar;
+  w.en=document.getElementById('we').value.trim();
+  w.target=parseInt(document.getElementById('wt').value)||33;
+  markUnsaved(); closeModal(); renderSection();
+}
+function deleteWird(id) {
+  if(!confirm('Remove this wird?')) return;
+  DB.wird=DB.wird.filter(w=>w.id!==id);
+  markUnsaved(); renderSection();
 }
 function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
 
@@ -3705,21 +3775,7 @@ function renderSijjilWrite(el, dateLabel) {
 
   const ta = document.getElementById('sj-ta');
   if(ta) { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
-
-  if(images.length && gdriveToken) {
-    images.forEach(img => {
-      if(!img.driveId) return;
-      getDriveImgUrl(img.driveId).then(url => {
-        if(!url) return;
-        const item = el.querySelector(`.sj-gitem[data-drive-id="${img.driveId}"]`);
-        if(!item) return;
-        item.querySelector('.sj-gitem-loader')?.remove();
-        const imgEl = document.createElement('img');
-        imgEl.src = url; imgEl.alt = img.name||''; imgEl.loading='lazy';
-        item.insertBefore(imgEl, item.firstChild);
-      }).catch(()=>{});
-    });
-  }
+  // Images in Write mode intentionally show as placeholders — they load in Memories tab only
 }
 
 /* ── Time Machine ── */
@@ -4367,6 +4423,38 @@ function renderMizan(el) {
         <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text4)"><div style="width:8px;height:8px;background:var(--border2);border-radius:1px;opacity:0.6"></div>Planned</div>
       </div>
     </div>`;
+  }
+
+  /* ── INCOMPLETE TASKS THIS WEEK ── */
+  const incompleteTasks = getThisWeekIncompleteTasks();
+  if(incompleteTasks.length) {
+    h+=`<div class="mz-section">
+      <div class="mz-section-title">Incomplete tasks this week</div>`;
+    // Group by day
+    const byDay = {};
+    incompleteTasks.forEach(t => {
+      if(!byDay[t.fromDate]) byDay[t.fromDate] = [];
+      byDay[t.fromDate].push(t);
+    });
+    Object.entries(byDay).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([ds, tasks]) => {
+      const d = new Date(ds+'T12:00:00');
+      const dayLabel = d.toLocaleDateString('en-US',{weekday:'long', month:'short', day:'numeric'});
+      const isToday = ds === todayStr();
+      h+=`<div style="margin-bottom:12px">
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${isToday?'var(--gold)':'var(--text4)'};font-weight:600;margin-bottom:6px">${dayLabel}${isToday?' · Today':''}</div>`;
+      tasks.forEach(t => {
+        const pc = {low:'var(--green)',medium:'var(--gold)',urgent:'var(--rust)'}[t.priority||'medium'];
+        h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:4px;border-left:3px solid ${pc}">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;color:var(--text)">${esc(t.name)}</div>
+            ${t.note?`<div style="font-size:11px;color:var(--text3);margin-top:1px">${esc(t.note)}</div>`:''}
+          </div>
+          <div style="font-size:10px;color:${pc};font-weight:500;background:${pc}18;padding:2px 7px;border-radius:10px">${t.priority||'medium'}</div>
+        </div>`;
+      });
+      h+=`</div>`;
+    });
+    h+=`</div>`;
   }
 
   /* ── QUOTE ── */
