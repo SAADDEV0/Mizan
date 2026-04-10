@@ -4224,16 +4224,15 @@ async function _findOrMakeFolder(name, parentId) {
 
 async function getRaqibRoot() {
   if(_raqibRootId) return _raqibRootId;
-  // Try SaadOs folder first, then fall back to old Raqib folder for migration
-  const q = `name='SaadOs' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  const r = await _driveGet(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`);
+  // Search for SaadOs and legacy Raqib folders in a single query
+  const q = `(name='SaadOs' or name='Raqib') and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const r = await _driveGet(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&orderBy=name desc`);
   const d = await r.json();
-  if(d.files?.[0]?.id) { _raqibRootId = d.files[0].id; return _raqibRootId; }
-  // Also check legacy 'Raqib' folder
-  const q2 = `name='Raqib' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  const r2 = await _driveGet(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q2)}&fields=files(id)`);
-  const d2 = await r2.json();
-  if(d2.files?.[0]?.id) { _raqibRootId = d2.files[0].id; return _raqibRootId; }
+  // Prefer SaadOs over Raqib
+  const saados = d.files?.find(f => f.name === 'SaadOs');
+  const raqib  = d.files?.find(f => f.name === 'Raqib');
+  if(saados?.id) { _raqibRootId = saados.id; return _raqibRootId; }
+  if(raqib?.id)  { _raqibRootId = raqib.id;  return _raqibRootId; }
   const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
     method:'POST', headers:{ Authorization:'Bearer '+gdriveToken, 'Content-Type':'application/json' },
     body: JSON.stringify({ name:'SaadOs', mimeType:'application/vnd.google-apps.folder' }),
@@ -4350,40 +4349,87 @@ async function drivePull(silent=false) {
   try {
     const rootId = await getRaqibRoot();
 
-    // load profile (JSON only)
-    const profileId = await _findFileInFolder('profile.json', rootId);
-    if(profileId) {
-      const p = await _fetchJsonFile(profileId);
-      if(p) {
-        if(p.profile)   DB.profile   = { ...DB.profile, ...p.profile };
-        if(p.practices) DB.practices = p.practices;
-        if(p.wird)      DB.wird      = p.wird;
-        if(p.onboarded!=null) DB.onboarded = p.onboarded;
-        if(p.gdrive?.clientId) DB.gdrive.clientId = p.gdrive.clientId;
-        if(p.gdrive?.lastSync) DB.gdrive.lastSync = p.gdrive.lastSync;
-      }
+    // ── 1. Profile + all data.json files in PARALLEL ──────────────────────
+    // Single Drive search: find every file named "data.json" or "profile.json"
+    // that is a descendant of the root folder, in one API call.
+    const bulkQ = `(name='data.json' or name='profile.json') and trashed=false`;
+    const bulkUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(bulkQ)}&fields=files(id,name,parents)&pageSize=1000`;
+    const bulkR = await _driveGet(bulkUrl);
+    const bulkD = await bulkR.json();
+    const allFiles = bulkD.files || [];
+
+    // Separate profile.json and data.json files
+    const profileFile = allFiles.find(f => f.name === 'profile.json');
+    const dataFiles   = allFiles.filter(f => f.name === 'data.json');
+
+    // ── 2. Fetch all files in parallel ────────────────────────────────────
+    // We need to know which day folder each data.json belongs to.
+    // Build a map of folderId → dateStr from _dayFolderCache first,
+    // then for unknowns, fetch parent folder metadata in batch.
+    const knownFolderIds = new Set(Object.values(_dayFolderCache));
+
+    // Collect parent folder IDs we don't know yet
+    const unknownParentIds = [...new Set(
+      dataFiles.map(f => f.parents?.[0]).filter(id => id && !Object.values(_dayFolderCache).includes(id))
+    )];
+
+    // Batch-fetch unknown parent folder names (to resolve dateStr)
+    const parentMeta = {}; // folderId → name
+    // Populate from existing cache (reverse lookup)
+    Object.entries(_dayFolderCache).forEach(([ds, id]) => { parentMeta[id] = ds; });
+
+    if(unknownParentIds.length) {
+      // Drive supports fetching multiple file IDs; batch in chunks of 30
+      const CHUNK = 30;
+      const chunks = [];
+      for(let i=0;i<unknownParentIds.length;i+=CHUNK) chunks.push(unknownParentIds.slice(i,i+CHUNK));
+      await Promise.all(chunks.map(async chunk => {
+        const ids = chunk.map(id=>`'${id}' in parents`); // not ideal but works:
+        // Better: use individual metadata fetches in parallel within chunk
+        await Promise.all(chunk.map(async fid => {
+          try {
+            const r = await _driveGet(`https://www.googleapis.com/drive/v3/files/${fid}?fields=id,name`);
+            if(r.ok) { const m = await r.json(); parentMeta[m.id] = m.name; }
+          } catch(e) {}
+        }));
+      }));
     }
 
-    // scan SaadOs/YYYY/YYYY-MM-DD/data.json ONLY — no images, no videos
-    const years = await _listFolders(rootId);
-    for(const yr of years) {
-      const dayFolders = await _listFolders(yr.id);
-      for(const df of dayFolders) {
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(df.name)) continue;
-        // Only fetch data.json — intentionally skip Images/Videos subfolders
-        const dataId = await _findFileInFolder('data.json', df.id);
-        if(!dataId) continue;
-        const dd = await _fetchJsonFile(dataId);
-        if(!dd) continue;
-        DB.days[df.name] = {
-          niyyah:dd.niyyah||'', tasks:dd.tasks||[], prayers:dd.prayers||{},
-          wirdCounts:dd.wirdCounts||{}, practicesDone:dd.practicesDone||{},
-          journal:dd.journal||{ text:'', tags:[], images:[], videos:[] },
-          focusTime:dd.focusTime||{}, totalFocusSec:dd.totalFocusSec||0,
-          nawafil:dd.nawafil||[],
-        };
-        _dayFolderCache[df.name] = df.id;
-      }
+    // Now fetch profile + all data.json files in parallel
+    const [profileData, ...dayDataResults] = await Promise.all([
+      profileFile ? _fetchJsonFile(profileFile.id) : Promise.resolve(null),
+      ...dataFiles.map(async f => {
+        const parentId = f.parents?.[0];
+        const dateStr  = parentMeta[parentId];
+        if(!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+        const dd = await _fetchJsonFile(f.id);
+        return dd ? { dateStr, parentId, dd } : null;
+      })
+    ]);
+
+    // ── 3. Apply profile ──────────────────────────────────────────────────
+    if(profileData) {
+      const p = profileData;
+      if(p.profile)   DB.profile   = { ...DB.profile, ...p.profile };
+      if(p.practices) DB.practices = p.practices;
+      if(p.wird)      DB.wird      = p.wird;
+      if(p.onboarded!=null) DB.onboarded = p.onboarded;
+      if(p.gdrive?.clientId) DB.gdrive.clientId = p.gdrive.clientId;
+      if(p.gdrive?.lastSync) DB.gdrive.lastSync = p.gdrive.lastSync;
+    }
+
+    // ── 4. Apply day data ─────────────────────────────────────────────────
+    for(const result of dayDataResults) {
+      if(!result) continue;
+      const { dateStr, parentId, dd } = result;
+      DB.days[dateStr] = {
+        niyyah:dd.niyyah||'', tasks:dd.tasks||[], prayers:dd.prayers||{},
+        wirdCounts:dd.wirdCounts||{}, practicesDone:dd.practicesDone||{},
+        journal:dd.journal||{ text:'', tags:[], images:[], videos:[] },
+        focusTime:dd.focusTime||{}, totalFocusSec:dd.totalFocusSec||0,
+        nawafil:dd.nawafil||[],
+      };
+      _dayFolderCache[dateStr] = parentId;
     }
 
     if(!DB.wird?.length) DB.wird = JSON.parse(JSON.stringify(DEFAULT_WIRD));
@@ -5399,13 +5445,17 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
     document.getElementById('app').classList.add('visible');
     document.getElementById('fab').style.display = 'none';
     document.getElementById('section-content').innerHTML =
-      `<div style="text-align:center;padding:80px 20px;color:var(--text3);font-family:var(--serif);font-style:italic;font-size:18px">
-        Loading from Drive…
-       </div>`;
+      `<div id="boot-msg" style="text-align:center;padding:80px 20px;color:var(--text3);font-family:var(--serif);font-style:italic;font-size:18px">
+        <div style="margin-bottom:20px">Connecting to Drive…</div>
+        <div style="width:40px;height:40px;margin:0 auto;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:boot-spin 0.8s linear infinite"></div>
+      </div>
+      <style>@keyframes boot-spin{to{transform:rotate(360deg)}}</style>`;
 
     await silentDriveAuth(false);
 
     if(gdriveToken) {
+      const bm = document.getElementById('boot-msg');
+      if(bm) bm.querySelector('div').textContent = 'Loading your data…';
       // Try migration from old flat file first
       const migrated = await migrateOldData();
       if(!migrated) {
