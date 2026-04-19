@@ -925,6 +925,74 @@ textarea.fi { resize: vertical; min-height: 80px; }
 }
 .p-notes:focus { border-color: var(--gold); }
 
+/* ── Prayer Time Badge ── */
+.p-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+  color: var(--text3);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 10px;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+.p-time-badge .pt-icon { font-size: 10px; opacity: 0.7; }
+.p-time-badge.loaded { color: var(--gold); background: var(--gold-glow); border-color: rgba(176,120,24,0.25); }
+.p-time-badge.next-prayer {
+  color: #fff;
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 2px 8px rgba(176,120,24,0.35);
+  animation: pulse-time 2s ease-in-out infinite;
+}
+.p-time-badge.next-prayer .pt-icon { opacity: 1; }
+@keyframes pulse-time {
+  0%,100% { box-shadow: 0 2px 8px rgba(176,120,24,0.35); }
+  50%      { box-shadow: 0 2px 16px rgba(176,120,24,0.55); }
+}
+
+/* ── Next prayer countdown banner ── */
+.salat-next-banner {
+  background: linear-gradient(135deg, #1a1814 0%, #2a2218 100%);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.salat-next-banner::after {
+  content: '';
+  position: absolute;
+  right: -20px; top: -20px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(176,120,24,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+.snb-icon { font-size: 32px; line-height: 1; flex-shrink: 0; }
+.snb-info { flex: 1; min-width: 0; }
+.snb-label { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold2); font-weight: 500; margin-bottom: 3px; }
+.snb-name { font-family: var(--serif); font-size: 22px; font-weight: 400; color: #f0ece4; line-height: 1.1; }
+.snb-name .snb-ar { font-size: 15px; color: rgba(240,236,228,0.5); margin-left: 8px; }
+.snb-countdown { text-align: right; flex-shrink: 0; }
+.snb-time { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--gold); letter-spacing: -0.5px; line-height: 1; }
+.snb-in { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: rgba(240,236,228,0.4); margin-top: 2px; }
+
+/* ── Prayer card improved header ── */
+.p-header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.p-name-block { display: flex; flex-direction: column; gap: 1px; }
+.p-name { font-weight: 500; font-size: 15px; }
+.p-ar-sub { font-family: var(--serif); font-size: 13px; color: var(--ink3); font-weight: 400; }
+
 .week-strip {
   display: flex; gap: 6px;
   margin-top: 24px;
@@ -3377,16 +3445,80 @@ function closeBS() { document.getElementById('bs-bg').classList.remove('open'); 
 /* ════════════════════════════════════════════════
    SALAT
 ════════════════════════════════════════════════ */
+/* ── Prayer times cache ── */
+let _prayerTimesCache = {};   // { 'YYYY-MM-DD': { fajr:'05:12', dhuhr:'13:20', ... } }
+let _prayerTimerInterval = null;
+
+async function fetchPrayerTimes(dateStr) {
+  if(_prayerTimesCache[dateStr]) return _prayerTimesCache[dateStr];
+  try {
+    const [y,m,d] = dateStr.split('-');
+    const url = `https://api.aladhan.com/v1/timings/${d}-${m}-${y}?latitude=33.2316&longitude=-8.5007&method=21`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.code===200){
+      const t = data.data.timings;
+      const times = {
+        fajr:    t.Fajr.slice(0,5),
+        dhuhr:   t.Dhuhr.slice(0,5),
+        asr:     t.Asr.slice(0,5),
+        maghrib: t.Maghrib.slice(0,5),
+        isha:    t.Isha.slice(0,5),
+      };
+      _prayerTimesCache[dateStr] = times;
+      return times;
+    }
+  } catch(e){}
+  return null;
+}
+
+function _parseHM(hm) {
+  const [h,m] = hm.split(':').map(Number);
+  return h*60+m;
+}
+
+function _getNextPrayer(times) {
+  const now = new Date();
+  const cur = now.getHours()*60 + now.getMinutes();
+  const order = ['fajr','dhuhr','asr','maghrib','isha'];
+  for(const id of order){
+    if(_parseHM(times[id]) > cur) return id;
+  }
+  return 'fajr'; // next is tomorrow's fajr
+}
+
+function _formatCountdown(times, nextId) {
+  const now = new Date();
+  const cur = now.getHours()*60 + now.getMinutes();
+  let target = _parseHM(times[nextId]);
+  if(target <= cur) target += 24*60; // tomorrow
+  let diff = target - cur;
+  const hh = Math.floor(diff/60);
+  const mm = diff%60;
+  return hh>0 ? `${hh}h ${mm}m` : `${mm}m`;
+}
+
+function _fmt12(hm) {
+  let [h,m] = hm.split(':').map(Number);
+  const ampm = h>=12 ? 'PM' : 'AM';
+  h = h%12 || 12;
+  return `${h}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
 function renderSalat(el) {
   const day=getDay(currentDate);
   if(!day.prayers) day.prayers={};
   if(!day.nawafil) day.nawafil=[];
 
+  // Clear any old countdown timer
+  if(_prayerTimerInterval){ clearInterval(_prayerTimerInterval); _prayerTimerInterval=null; }
+
   let h=`<div class="s-head">
-    <div class="s-kicker">Prayer</div>
+    <div class="s-kicker">Prayer · El Jadida</div>
     <div class="s-title">Salat <span class="s-title-ar">صلاة</span></div>
-    <div class="s-sub">The pillars of your day</div>
+    <div class="s-sub">The five pillars of your day</div>
   </div>
+  <div id="salat-next-banner-wrap"></div>
   <div class="prayer-stack">
   <div class="prayer-line"></div>`;
 
@@ -3411,8 +3543,13 @@ function renderSalat(el) {
       </div></div>
       <div class="prayer-card" id="pc-${p.id}">
         <div class="p-header" onclick="togglePrayer('${p.id}')">
-          <span class="p-name">${p.en}</span>
-          <span class="p-ar">${p.ar}</span>
+          <div class="p-header-left">
+            <div class="p-name-block">
+              <span class="p-name">${p.en}</span>
+              <span class="p-ar-sub">${p.ar}</span>
+            </div>
+            <span class="p-time-badge" id="ptb-${p.id}"><span class="pt-icon">⏱</span> —:—</span>
+          </div>
           <span class="p-badge ${badgeCls}">${badgeText}</span>
           <span class="p-caret">▾</span>
         </div>
@@ -3502,6 +3639,62 @@ function renderSalat(el) {
   h+=`</div>`;
 
   el.innerHTML=h;
+
+  // ── Async: load prayer times for current date ──
+  (async function loadTimes() {
+    const times = await fetchPrayerTimes(currentDate);
+    if(!times) return;
+    const PORDER = ['fajr','dhuhr','asr','maghrib','isha'];
+    const isToday = (currentDate === todayStr());
+    const nextId  = isToday ? _getNextPrayer(times) : null;
+
+    // Update each badge
+    PORDER.forEach(id => {
+      const badge = document.getElementById('ptb-'+id);
+      if(!badge) return;
+      badge.innerHTML = `<span class="pt-icon">🕐</span> ${_fmt12(times[id])}`;
+      badge.classList.add('loaded');
+      if(isToday && id===nextId) badge.classList.add('next-prayer');
+    });
+
+    // Render/update next-prayer banner
+    function renderBanner(){
+      const wrap = document.getElementById('salat-next-banner-wrap');
+      if(!wrap) return;
+      if(!isToday){ wrap.innerHTML=''; return; }
+      const nid = _getNextPrayer(times);
+      const np = PRAYERS.find(p=>p.id===nid);
+      const countdown = _formatCountdown(times, nid);
+      const icons = {fajr:'🌙',dhuhr:'☀️',asr:'🌤',maghrib:'🌅',isha:'🌃'};
+      wrap.innerHTML=`<div class="salat-next-banner">
+        <div class="snb-icon">${icons[nid]||'🕌'}</div>
+        <div class="snb-info">
+          <div class="snb-label">Next Prayer</div>
+          <div class="snb-name">${np.en} <span class="snb-ar">${np.ar}</span></div>
+          <div style="font-size:12px;color:rgba(240,236,228,0.55);margin-top:3px">${_fmt12(times[nid])}</div>
+        </div>
+        <div class="snb-countdown">
+          <div class="snb-time" id="snb-cd">${countdown}</div>
+          <div class="snb-in">remaining</div>
+        </div>
+      </div>`;
+    }
+    renderBanner();
+
+    // Live countdown tick
+    if(isToday){
+      _prayerTimerInterval = setInterval(()=>{
+        const el2 = document.getElementById('snb-cd');
+        if(!el2){ clearInterval(_prayerTimerInterval); return; }
+        const nid2 = _getNextPrayer(times);
+        el2.textContent = _formatCountdown(times, nid2);
+        // Re-highlight next badge if prayer changed
+        document.querySelectorAll('.p-time-badge').forEach(b=>b.classList.remove('next-prayer'));
+        const nb = document.getElementById('ptb-'+nid2);
+        if(nb) nb.classList.add('next-prayer');
+      }, 30000);
+    }
+  })();
 }
 
 function togglePrayer(id) { document.getElementById('pc-'+id).classList.toggle('open'); }
