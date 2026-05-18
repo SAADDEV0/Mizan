@@ -1215,13 +1215,13 @@ textarea.fi { resize: vertical; min-height: 80px; }
   border-radius: 20px;
   border: 1.5px solid transparent;
   transition: all 0.2s var(--ease);
-  position: relative;
   white-space: nowrap;
+  background: transparent;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
-.sj-date-label:hover { border-color: var(--border); background: var(--surface); color: var(--gold); }
-.sj-date-label input[type="date"] {
-  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: none;
-}
+.sj-date-label:hover, .sj-date-label:focus { border-color: var(--border); background: var(--surface); color: var(--gold); }
 .sj-date-today-pill {
   font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
   padding: 4px 11px;
@@ -4102,10 +4102,7 @@ function renderSijjilWrite(el, dateLabel) {
   wrap.innerHTML = `
     <div class="sj-date-nav">
       <button class="sj-date-arrow" onclick="sjDateShift(-1)">‹</button>
-      <div class="sj-date-label" title="Pick a date">
-        ${sjDateLabel}
-        <input type="date" value="${sijjilDate}" max="${todayStr()}" onchange="sjDatePick(this.value)" />
-      </div>
+      <input type="date" class="sj-date-label" value="${sijjilDate}" max="${todayStr()}" onchange="sjDatePick(this.value)" title="Pick a date" />
       <button class="sj-date-arrow" onclick="sjDateShift(1)" ${isToday?'disabled style="opacity:0.3;cursor:default"':''}>›</button>
       <button class="sj-date-today-pill ${isToday?'hidden':''}" onclick="sjDateToday()">Today</button>
     </div>
