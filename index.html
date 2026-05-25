@@ -2760,11 +2760,11 @@ const NAV = [
   { id:'mal',       en:'Māl',       ar:'مال',     icon:'◎' },
 ];
 const BLOCKS = [
-  { id:'dawn',      en:'Dawn',      ar:'الفجر',  color:'#7a9ec8', icon:'🌅', time:'4–6 AM',  note:'Early morning focus' },
-  { id:'morning',   en:'Morning',   ar:'الصباح', color:'#c8a55c', icon:'☀️',  time:'7–11 AM', note:'Peak productivity' },
-  { id:'afternoon', en:'Afternoon', ar:'الظهر',  color:'#8faa5c', icon:'🌤', time:'12–3 PM', note:'Midday energy' },
-  { id:'evening',   en:'Evening',   ar:'العصر',  color:'#9a7ac8', icon:'🌆', time:'4–7 PM',  note:'Wind down' },
-  { id:'night',     en:'Night',     ar:'العشاء', color:'#5c7aaa', icon:'🌙', time:'8–11 PM', note:'Reflection & rest' },
+  { id:'fajr',    en:'After Fajr',    ar:'بعد الفجر',   color:'#7a9ec8', icon:'🌙', time:'Fajr → Dhuhr',   note:'Early morning' },
+  { id:'dhuhr',   en:'After Dhuhr',   ar:'بعد الظهر',   color:'#c8a55c', icon:'☀️',  time:'Dhuhr → Asr',    note:'Midday block' },
+  { id:'asr',     en:'After Asr',     ar:'بعد العصر',   color:'#d4875a', icon:'🌤', time:'Asr → Maghrib',  note:'Afternoon' },
+  { id:'maghrib', en:'After Maghrib', ar:'بعد المغرب',  color:'#c87a5c', icon:'🌅', time:'Maghrib → Isha', note:'Evening' },
+  { id:'isha',    en:'After Isha',    ar:'بعد العشاء',  color:'#5c7aaa', icon:'🌙', time:'Isha → Fajr',    note:'Night reflection' },
 ];
 const PRAYERS = [
   { id:'fajr',    en:'Fajr',    ar:'الفجر' },
@@ -3360,7 +3360,7 @@ function renderNiyyah(el) {
         <div class="tblock-dot ${dotClass}" style="--block-color:${b.color}">
           ${allDone ? '✓' : b.icon}
         </div>
-        <div class="tblock-time-label">${b.time}</div>
+        <div class="tblock-time-label" id="niyyah-ptl-${b.id}">—</div>
       </div>
       <div class="tblock-card" id="bc-${b.id}" style="--block-color:${b.color}">
         <div class="tblock-header" onclick="toggleBlock('${b.id}')">
@@ -3373,7 +3373,7 @@ function renderNiyyah(el) {
 
     if(!tasks.length) {
       h += `<div class="empty-state" style="padding:10px 0 14px">
-        <span style="font-size:12px">No tasks — tap ＋ to plan your ${b.en.toLowerCase()}</span>
+        <span style="font-size:12px">No tasks — tap ＋ to plan after ${b.en.replace('After ','').toLowerCase()}</span>
       </div>`;
     } else {
       [...tasks].sort((a,b)=>(a.done?1:0)-(b.done?1:0)).forEach(t=>{
@@ -3400,6 +3400,24 @@ function renderNiyyah(el) {
   el.querySelector('#niyyah-text').addEventListener('input',e=>{
     getDay(currentDate).niyyah=e.target.value; markUnsaved();
   });
+
+  // Async: load real prayer times into timeline dot labels
+  (async function loadNiyyahPrayerTimes() {
+    const times = await fetchPrayerTimes(currentDate);
+    if(!times) {
+      BLOCKS.forEach(b => {
+        const lbl = document.getElementById('niyyah-ptl-'+b.id);
+        if(lbl) lbl.textContent = b.time;
+      });
+      return;
+    }
+    BLOCKS.forEach(b => {
+      const lbl = document.getElementById('niyyah-ptl-'+b.id);
+      if(!lbl) return;
+      const t = times[b.id];
+      lbl.textContent = t ? _fmt12(t) : b.time;
+    });
+  })();
 }
 
 function toggleBlock(id) { document.getElementById('bc-'+id).classList.toggle('collapsed'); }
@@ -3455,7 +3473,7 @@ function openAddTask() {
       <input type="text" class="fi" id="ti-name" placeholder="What needs doing?" /></div>
     <div class="fg"><label class="fl">Note</label>
       <input type="text" class="fi" id="ti-note" placeholder="Optional detail…" /></div>
-    <div class="fg"><label class="fl">Time of day</label>
+    <div class="fg"><label class="fl">Prayer slot</label>
       <select class="fi" id="ti-block">
         ${BLOCKS.map(b=>`<option value="${b.id}">${b.icon} ${b.en} · ${b.time}</option>`).join('')}
       </select></div>
@@ -3510,7 +3528,7 @@ function openEditTask(id) {
       <input type="text" class="fi" id="ti-name" value="${esc(task.name)}" placeholder="What needs doing?" /></div>
     <div class="fg"><label class="fl">Note</label>
       <input type="text" class="fi" id="ti-note" value="${esc(task.note||'')}" placeholder="Optional detail…" /></div>
-    <div class="fg"><label class="fl">Time of day</label>
+    <div class="fg"><label class="fl">Prayer slot</label>
       <select class="fi" id="ti-block">${blockOpts}</select></div>
     <div class="fg"><label class="fl">Duration (min)</label>
       <input type="number" class="fi" id="ti-dur" value="${task.duration||''}" placeholder="30" min="1" max="480" /></div>
