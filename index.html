@@ -1588,6 +1588,13 @@ textarea.fi { resize: vertical; min-height: 80px; }
 
 /* ── Gallery ── */
 .gal-wrap { padding-bottom: 12px; }
+.gal-count-sub {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink3);
+  margin-bottom: 12px;
+}
 .gal-view-row {
   display: flex; gap: 6px; flex-wrap: wrap;
   margin-bottom: 14px;
@@ -1622,6 +1629,7 @@ textarea.fi { resize: vertical; min-height: 80px; }
 }
 .gal-load-btn:hover { border-color: var(--gold); color: var(--gold); }
 .gal-load-btn:disabled { cursor: default; opacity: 0.7; }
+.gal-load-btn.loaded { color: var(--green); border-color: var(--green); }
 
 .gal-item {
   position: relative;
@@ -1649,97 +1657,48 @@ textarea.fi { resize: vertical; min-height: 80px; }
   pointer-events: none;
 }
 
-/* Masonry (default) */
+/* Soft Masonry (default) — gentle varied heights, soft rounded tiles */
 .gal-masonry {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: 90px;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
+}
+.gal-masonry .gal-item {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 .gal-masonry-item.span-1 { grid-row: span 1; }
 .gal-masonry-item.span-2 { grid-row: span 2; }
 @media (min-width: 640px) {
-  .gal-masonry { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 110px; gap: 8px; }
+  .gal-masonry { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 110px; gap: 10px; }
 }
 @media (min-width: 960px) {
-  .gal-masonry { grid-template-columns: repeat(6, 1fr); grid-auto-rows: 130px; gap: 10px; }
+  .gal-masonry { grid-template-columns: repeat(6, 1fr); grid-auto-rows: 130px; gap: 12px; }
 }
 
-/* Polaroid / scrapbook */
-.gal-polaroid-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 22px 14px;
-  padding: 10px 6px 24px;
-}
-.gal-polaroid {
-  background: var(--surface);
-  padding: 10px 10px 14px;
-  border-radius: 4px;
-  box-shadow: var(--shadow-md);
-  transform: rotate(var(--tilt));
-  transition: transform 0.25s var(--ease);
-  cursor: pointer;
-}
-.gal-polaroid:hover { transform: rotate(0deg) scale(1.03); }
-.gal-polaroid-photo { aspect-ratio: 1/1; border-radius: 2px; }
-.gal-polaroid-cap {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 13px;
-  color: var(--ink3);
-  text-align: center;
-  margin-top: 10px;
-}
-@media (min-width: 640px) {
-  .gal-polaroid-grid { grid-template-columns: repeat(3, 1fr); gap: 28px 18px; }
-}
-@media (min-width: 960px) {
-  .gal-polaroid-grid { grid-template-columns: repeat(5, 1fr); gap: 32px 22px; }
-}
-
-/* Featured mix */
-.gal-featured-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: 100px;
-  gap: 6px;
+/* Pinterest — true masonry columns, natural aspect ratios */
+.gal-pinterest {
+  column-count: 2;
+  column-gap: 8px;
   width: 100%;
 }
-.gal-feat-big {
-  grid-column: span 2;
-  grid-row: span 2;
+.gal-pin-item {
+  break-inside: avoid;
+  margin-bottom: 8px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  aspect-ratio: var(--ar, 1 / 1.3);
 }
+.gal-pin-item:nth-child(3n)   { --ar: 1 / 1; }
+.gal-pin-item:nth-child(3n+1) { --ar: 1 / 1.4; }
+.gal-pin-item:nth-child(3n+2) { --ar: 1 / 0.9; }
 @media (min-width: 640px) {
-  .gal-featured-grid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 120px; gap: 8px; }
+  .gal-pinterest { column-count: 3; column-gap: 10px; }
 }
 @media (min-width: 960px) {
-  .gal-featured-grid { grid-template-columns: repeat(6, 1fr); grid-auto-rows: 140px; gap: 10px; }
-}
-
-/* By month — horizontal scroll rows */
-.gal-month-block { margin-bottom: 22px; }
-.gal-month-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--gold);
-  margin-bottom: 8px;
-}
-.gal-month-strip {
-  display: flex; gap: 8px;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
-}
-.gal-month-strip::-webkit-scrollbar { height: 3px; }
-.gal-strip-item {
-  flex-shrink: 0;
-  width: 130px; height: 130px;
-  scroll-snap-align: start;
-}
-@media (min-width: 640px) {
-  .gal-strip-item { width: 160px; height: 160px; }
+  .gal-pinterest { column-count: 5; column-gap: 12px; }
 }
 
 
@@ -2913,7 +2872,6 @@ const NAV = [
   { id:'salat',     en:'Salat',     ar:'صلاة',    icon:'☽' },
   { id:'amal',      en:'Amal',      ar:'عمل',     icon:'◈' },
   { id:'muhasabah', en:'Sijjil',    ar:'سجلّ',    icon:'✎' },
-  { id:'gallery',   en:'Gallery',   ar:'معرض',    icon:'🖼' },
   { id:'mizan',     en:'Mizan',     ar:'ميزان',   icon:'⚖' },
   { id:'mal',       en:'Māl',       ar:'مال',     icon:'◎' },
 ];
@@ -3459,7 +3417,6 @@ function renderSection() {
     case 'salat':     renderSalat(el);  break;
     case 'amal':      renderAmal(el);   break;
     case 'muhasabah': renderMuhasabah(el); break;
-    case 'gallery':   renderGallery(el);  break;
     case 'mizan':     renderMizan(el);  break;
     case 'mal':       renderMal(el);    break;
   }
@@ -4274,12 +4231,15 @@ function renderMuhasabah(el) {
   h += `<div class="sj-mode-row">
     <button class="sj-mode-btn ${sijjilMode==='write'?'active':''}" onclick="setSijjilMode('write')">✎ Write</button>
     <button class="sj-mode-btn ${sijjilMode==='memories'?'active':''}" onclick="setSijjilMode('memories')">✦ Memories</button>
+    <button class="sj-mode-btn ${sijjilMode==='gallery'?'active':''}" onclick="setSijjilMode('gallery')">🖼 Gallery</button>
   </div>`;
 
   el.innerHTML = h;
 
   if(sijjilMode === 'write') {
     renderSijjilWrite(el, dateLabel);
+  } else if(sijjilMode === 'gallery') {
+    renderGallery(el);
   } else {
     renderTimeMachine(el);
   }
@@ -4521,21 +4481,24 @@ async function loadAllMedia(allDates) {
     }
   }
   if(btn) { btn.textContent='✓ Media loaded'; btn.style.color='var(--green)'; btn.style.borderColor='var(--green)'; }
+
+  // Also preload everything for the Gallery tab so it's ready instantly
+  preloadGallery();
 }
 
 /* ════════════════════════════════════════════════
    GALLERY — all photos & videos from every day
 ════════════════════════════════════════════════ */
 let galleryLoaded = false;
+let galleryLoading = false;
 let _galleryItems = [];
+const _galleryUrlCache = {};
+const _galleryFetchPromises = {};
 
-let galleryView = 'masonry'; // 'masonry' | 'polaroid' | 'featured' | 'months'
+let galleryView = 'masonry'; // 'masonry' | 'pinterest'
 
-function renderGallery(el) {
-  const wrap = document.createElement('div');
-  wrap.className = 'gal-wrap';
-
-  // collect all media items from all days, newest first
+// Build the flat list of all media items across all days (newest first)
+function collectGalleryItems() {
   const items = [];
   Object.keys(DB.days).sort((a,b)=>b.localeCompare(a)).forEach(ds => {
     const j = DB.days[ds]?.journal;
@@ -4544,12 +4507,44 @@ function renderGallery(el) {
     (j.videos||[]).forEach(vid => items.push({ date: ds, type:'video', driveId: vid.driveId, name: vid.name }));
   });
   _galleryItems = items;
+  return items;
+}
 
-  let h = `<div class="s-head">
-    <div class="s-kicker">Memories</div>
-    <div class="s-title">Gallery <span class="s-title-ar">معرض</span></div>
-    <div class="s-sub">${items.length} item${items.length===1?'':'s'} from all your entries</div>
-  </div>`;
+// Fetch & cache every gallery media URL in the background (no DOM required).
+// Used when "Load Media" is pressed in Sijjil's Memories tab, so Gallery
+// opens already populated.
+async function preloadGallery() {
+  if(!gdriveToken) return;
+  const items = collectGalleryItems();
+  galleryLoading = true;
+  await Promise.all(items.map(async it => {
+    if(!it.driveId || _galleryUrlCache[it.driveId]) return;
+    if(_galleryFetchPromises[it.driveId]) { await _galleryFetchPromises[it.driveId]; return; }
+    const p = (async () => {
+      try {
+        const url = await getDriveMediaUrl(it.driveId);
+        if(url) _galleryUrlCache[it.driveId] = url;
+      } catch(e) {}
+    })();
+    _galleryFetchPromises[it.driveId] = p;
+    await p;
+  }));
+  galleryLoaded = true;
+  galleryLoading = false;
+  // If Gallery is currently visible, fill in the placeholders now
+  applyGalleryCache();
+  const btn = document.getElementById('gal-load-btn');
+  if(btn) { btn.textContent = '✓ Loaded'; btn.classList.add('loaded'); btn.disabled = false; }
+}
+
+function renderGallery(el) {
+  const wrap = document.createElement('div');
+  wrap.className = 'gal-wrap';
+
+  // collect all media items from all days, newest first
+  const items = collectGalleryItems();
+
+  let h = `<div class="gal-count-sub">${items.length} item${items.length===1?'':'s'} from all your entries</div>`;
 
   if(!items.length) {
     h += `<div class="tm-empty">
@@ -4563,68 +4558,26 @@ function renderGallery(el) {
 
   // View switcher
   const views = [
-    { id:'masonry',  label:'◫ Masonry' },
-    { id:'polaroid', label:'❏ Polaroid' },
-    { id:'featured', label:'▣ Featured' },
-    { id:'months',   label:'☷ By month' },
+    { id:'masonry',   label:'◫ Soft Masonry' },
+    { id:'pinterest', label:'❖ Pinterest' },
   ];
   h += `<div class="gal-view-row">
     ${views.map(v=>`<button class="gal-view-btn ${galleryView===v.id?'active':''}" onclick="setGalleryView('${v.id}')">${v.label}</button>`).join('')}
   </div>`;
 
-  h += `<button id="gal-load-btn" class="gal-load-btn" onclick="loadGalleryMedia()">🖼 Load images</button>`;
+  h += `<button id="gal-load-btn" class="gal-load-btn ${galleryLoaded?'loaded':''}" ${galleryLoading?'disabled':''} onclick="loadGalleryMedia()">${galleryLoaded ? '✓ Loaded' : (galleryLoading ? 'Loading…' : '🖼 Load images')}</button>`;
 
-  // Random rotation seed for polaroid (stable per item index)
-  const tilt = i => [(-4),(3),(-2),(5),(-5),(2),(-3),(4)][i % 8];
-
-  if(galleryView === 'months') {
-    const byMonth = {};
+  if(galleryView === 'pinterest') {
+    h += `<div class="gal-pinterest" id="gal-grid">`;
     items.forEach((it, i) => {
-      const [y,m] = it.date.split('-');
-      const key = `${y}-${m}`;
-      if(!byMonth[key]) byMonth[key] = [];
-      byMonth[key].push(i);
-    });
-    h += `<div class="gal-months">`;
-    Object.entries(byMonth).forEach(([key, idxs]) => {
-      const [y,m] = key.split('-');
-      const label = new Date(`${y}-${m}-01T12:00:00`).toLocaleDateString('en-US',{month:'long', year:'numeric'});
-      h += `<div class="gal-month-block">
-        <div class="gal-month-label">${label}</div>
-        <div class="gal-month-strip">`;
-      idxs.forEach(i => {
-        h += `<div class="gal-item gal-strip-item" data-i="${i}" onclick="openJLightbox('${esc(items[i].driveId||'')}','${items[i].type}')">
-          <div class="gal-item-ph" id="gal-ph-${i}">${items[i].type==='video' ? '🎬' : '🖼'}</div>
-          ${items[i].type==='video' ? '<div class="gal-play">▶</div>' : ''}
-        </div>`;
-      });
-      h += `</div></div>`;
-    });
-    h += `</div>`;
-  } else if(galleryView === 'featured') {
-    h += `<div class="gal-featured-grid">`;
-    items.forEach((it, i) => {
-      const big = i % 7 === 0; // every 7th item is featured/large
-      h += `<div class="gal-item ${big?'gal-feat-big':''}" data-i="${i}" onclick="openJLightbox('${esc(it.driveId||'')}','${it.type}')">
+      h += `<div class="gal-item gal-pin-item" data-i="${i}" onclick="openJLightbox('${esc(it.driveId||'')}','${it.type}')">
         <div class="gal-item-ph" id="gal-ph-${i}">${it.type==='video' ? '🎬' : '🖼'}</div>
         ${it.type==='video' ? '<div class="gal-play">▶</div>' : ''}
       </div>`;
     });
     h += `</div>`;
-  } else if(galleryView === 'polaroid') {
-    h += `<div class="gal-polaroid-grid">`;
-    items.forEach((it, i) => {
-      h += `<div class="gal-polaroid" style="--tilt:${tilt(i)}deg" data-i="${i}" onclick="openJLightbox('${esc(it.driveId||'')}','${it.type}')">
-        <div class="gal-item gal-polaroid-photo">
-          <div class="gal-item-ph" id="gal-ph-${i}">${it.type==='video' ? '🎬' : '🖼'}</div>
-          ${it.type==='video' ? '<div class="gal-play">▶</div>' : ''}
-        </div>
-        <div class="gal-polaroid-cap">${new Date(it.date+'T12:00:00').toLocaleDateString('en-US',{month:'short', day:'numeric'})}</div>
-      </div>`;
-    });
-    h += `</div>`;
   } else {
-    // masonry (default)
+    // soft masonry (default)
     h += `<div class="gal-masonry" id="gal-grid">`;
     items.forEach((it, i) => {
       const span = [1,2,1,1,2,1,1,1][i % 8]; // varied heights via row-span
@@ -4639,8 +4592,9 @@ function renderGallery(el) {
   wrap.innerHTML = h;
   el.appendChild(wrap);
 
-  // auto-load if already loaded once this session
-  if(galleryLoaded && gdriveToken) loadGalleryMedia(true);
+  // Fill any items already cached, and resume loading if needed/in-progress
+  if(gdriveToken && (galleryLoaded || galleryLoading)) loadGalleryMedia(true);
+  else applyGalleryCache();
 }
 
 function setGalleryView(v) {
@@ -4656,30 +4610,59 @@ async function loadGalleryMedia(silent=false) {
     return;
   }
   if(btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
+  galleryLoading = true;
+
+  // Apply data already in cache to current placeholders immediately
+  applyGalleryCache();
 
   await Promise.all(_galleryItems.map(async (it, i) => {
     if(!it.driveId) return;
-    try {
-      const url = await getDriveMediaUrl(it.driveId);
-      if(!url) return;
-      const ph = document.getElementById(`gal-ph-${i}`);
-      if(!ph) return;
-      if(it.type === 'video') {
-        const vidEl = document.createElement('video');
-        vidEl.src = url; vidEl.muted = true; vidEl.preload = 'metadata';
-        vidEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
-        ph.replaceWith(vidEl);
-      } else {
-        const imgEl = document.createElement('img');
-        imgEl.src = url; imgEl.alt = it.name||''; imgEl.loading = 'lazy';
-        imgEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
-        ph.replaceWith(imgEl);
-      }
-    } catch(e) {}
+    if(_galleryUrlCache[it.driveId]) return; // already cached / applied above
+    if(_galleryFetchPromises[it.driveId]) {
+      await _galleryFetchPromises[it.driveId];
+      applyGalleryItem(it, i);
+      return;
+    }
+    const p = (async () => {
+      try {
+        const url = await getDriveMediaUrl(it.driveId);
+        if(url) _galleryUrlCache[it.driveId] = url;
+      } catch(e) {}
+    })();
+    _galleryFetchPromises[it.driveId] = p;
+    await p;
+    applyGalleryItem(it, i);
   }));
 
   galleryLoaded = true;
-  if(btn) { btn.textContent = '✓ Loaded'; btn.style.color = 'var(--green)'; btn.style.borderColor = 'var(--green)'; }
+  galleryLoading = false;
+  if(btn) { btn.textContent = '✓ Loaded'; btn.classList.add('loaded'); btn.disabled = false; }
+}
+
+// Fill in any placeholders that already have a cached URL
+function applyGalleryCache() {
+  _galleryItems.forEach((it, i) => {
+    if(it.driveId && _galleryUrlCache[it.driveId]) applyGalleryItem(it, i);
+  });
+}
+
+// Replace a single placeholder (if present) with its media element
+function applyGalleryItem(it, i) {
+  const url = _galleryUrlCache[it.driveId];
+  if(!url) return;
+  const ph = document.getElementById(`gal-ph-${i}`);
+  if(!ph) return;
+  if(it.type === 'video') {
+    const vidEl = document.createElement('video');
+    vidEl.src = url; vidEl.muted = true; vidEl.preload = 'metadata';
+    vidEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+    ph.replaceWith(vidEl);
+  } else {
+    const imgEl = document.createElement('img');
+    imgEl.src = url; imgEl.alt = it.name||''; imgEl.loading = 'lazy';
+    imgEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+    ph.replaceWith(imgEl);
+  }
 }
 
 function tmGoDay(dateStr) {
