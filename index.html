@@ -3434,6 +3434,9 @@ function init() {
   applyTheme(DB.profile.theme||'light');
   renderNav(); renderHero(); renderSection(); updateSyncUI();
   document.getElementById('fab').style.display = 'flex';
+  if (DB.profile?.notifEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    scheduleReminder();
+  }
 }
 
 /* ════════════════════════════════════════════════
@@ -6263,6 +6266,9 @@ function openSettings() {
   const t=DB.profile.theme||'light';
   const syn=DB.gdrive.connected;
   const last=DB.gdrive.lastSync?new Date(DB.gdrive.lastSync).toLocaleTimeString():'—';
+  const notifState = (typeof Notification==='undefined') ? 'blocked'
+    : Notification.permission==='granted' && DB.profile.notifEnabled ? 'on'
+    : Notification.permission==='denied' ? 'blocked' : 'off';
   document.getElementById('settings-content').innerHTML=`
     <div class="s-section">
       <div class="s-section-title">Appearance</div>
@@ -6298,6 +6304,25 @@ function openSettings() {
       </div>
       <button class="s-btn" onclick="drivePull()">⬇ Pull latest from Drive</button>
       <button class="s-btn danger" onclick="driveDisconnect()">Disconnect</button>`}
+    </div>
+    <div class="s-section">
+      <div class="s-section-title">Notifications</div>
+      <div class="drive-status-pill">
+        <div class="ds-dot ${notifState==='on'?'g':''}"></div>
+        ${notifState==='on'
+          ? `On · A reminder every ${DB.profile.notifMins||60} min while the app is open`
+          : notifState==='blocked'
+            ? 'Blocked — enable notifications for this site in your browser settings'
+            : 'Off — nothing will be sent'}
+      </div>
+      ${notifState!=='on' ? `
+      <button class="s-btn" onclick="enableReminders()" ${notifState==='blocked'?'disabled':''}>🔔 Turn on reminders</button>` : `
+      <div class="fg"><label class="fl">Remind me every</label>
+        <select class="fi" id="snotifmins" onchange="DB.profile.notifMins=parseInt(this.value);markUnsaved();scheduleReminder()">
+          ${[30,60,120,180].map(m=>`<option value="${m}" ${(DB.profile.notifMins||60)===m?'selected':''}>${m<60?m+' minutes':(m/60)+' hour'+(m>60?'s':'')}</option>`).join('')}
+        </select>
+      </div>
+      <button class="s-btn danger" onclick="disableReminders()">Turn off reminders</button>`}
     </div>`;
   document.getElementById('settings-bg').classList.add('open');
 }
@@ -6507,6 +6532,69 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
   });
+}
+
+/* ════════════════════════════════════════════════
+   LOCAL REMINDER NOTIFICATIONS
+   No backend — just a periodic "what are you doing
+   right now?" nudge while the app is open, plus a
+   catch-up check whenever the app is reopened.
+════════════════════════════════════════════════ */
+let _reminderTimer = null;
+const REMINDER_MESSAGES = [
+  'What are you doing right now?',
+  'Quick check-in — how is your day going?',
+  'A moment to pause and reflect.',
+  'Anything worth writing down today?',
+];
+
+async function enableReminders() {
+  if (!('Notification' in window)) { alert('Notifications are not supported in this browser.'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { openSettings(); return; }
+  DB.profile.notifEnabled = true;
+  DB.profile.notifMins = DB.profile.notifMins || 60;
+  markUnsaved();
+  scheduleReminder();
+  openSettings();
+}
+
+function disableReminders() {
+  DB.profile.notifEnabled = false;
+  markUnsaved();
+  if (_reminderTimer) { clearTimeout(_reminderTimer); _reminderTimer = null; }
+  openSettings();
+}
+
+function _sendReminderNotification() {
+  const msg = REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
+  localStorage.setItem('raqib_last_notif', String(Date.now()));
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.active?.postMessage({ type: 'SHOW_REMINDER', title: 'SaadOs', body: msg });
+    }).catch(() => {
+      if (Notification.permission === 'granted') new Notification('SaadOs', { body: msg, icon: './icon-192.png' });
+    });
+  } else if (Notification.permission === 'granted') {
+    new Notification('SaadOs', { body: msg, icon: './icon-192.png' });
+  }
+}
+
+function scheduleReminder() {
+  if (_reminderTimer) { clearTimeout(_reminderTimer); _reminderTimer = null; }
+  if (!DB.profile.notifEnabled || Notification.permission !== 'granted') return;
+
+  const intervalMs = (DB.profile.notifMins || 60) * 60 * 1000;
+  const last = parseInt(localStorage.getItem('raqib_last_notif') || '0');
+  const elapsed = Date.now() - last;
+
+  if (last && elapsed < intervalMs) {
+    // Not due yet — schedule for whenever the remaining time is up
+    _reminderTimer = setTimeout(() => { _sendReminderNotification(); scheduleReminder(); }, intervalMs - elapsed);
+  } else {
+    // Overdue (e.g. app was closed past the interval) or never sent — nudge shortly after open, then resume the regular cadence
+    _reminderTimer = setTimeout(() => { _sendReminderNotification(); scheduleReminder(); }, 15000);
+  }
 }
 </script>
 
