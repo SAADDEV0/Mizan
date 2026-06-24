@@ -2760,6 +2760,7 @@ canvas { width: 100%; display: block; }
 
 </style>
    <meta name="google-site-verification" content="n0JCwP6TjfxQvkEbCZsrz0Br246YtJBGb_bsd184zgI" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -5157,6 +5158,17 @@ async function getDriveMediaUrl(driveId) {
 // alias for backwards compat
 const getDriveImgUrl = getDriveMediaUrl;
 
+// Fetches the raw bytes of a Drive file (for bundling into the export zip),
+// returning null on failure instead of throwing, so one bad file can't abort the whole export.
+async function _driveGetBlob(driveId) {
+  if(!gdriveToken || !driveId) return null;
+  try {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${driveId}?alt=media`, { headers:{ Authorization:'Bearer '+gdriveToken } });
+    if(!res.ok) return null;
+    return await res.blob();
+  } catch(e) { return null; }
+}
+
 async function openJLightbox(driveId, type='image') {
   if(!driveId) return;
   const lb = document.getElementById('j-lightbox');
@@ -6337,7 +6349,7 @@ function openSettings() {
     </div>
     <div class="s-section">
       <div class="s-section-title">Data</div>
-      <button class="s-btn" onclick="exportData()">⬇ Export JSON</button>
+      <button class="s-btn" onclick="exportData()">⬇ Download Data</button>
       <button class="s-btn" onclick="importData()">⬆ Import JSON</button>
       <input type="file" id="s-import" accept=".json" style="display:none" onchange="doImport(event)" />
       <button class="s-btn danger" onclick="clearData()">⚠ Clear all data</button>
@@ -6384,11 +6396,73 @@ function setTheme(t) {
   DB.profile.theme=t; applyTheme(t); markUnsaved();
   document.querySelectorAll('.th-btn').forEach(b=>b.classList.toggle('sel',b.dataset.t===t));
 }
-function exportData() {
+async function exportData() {
+  const btn = event?.target;
+  const originalLabel = btn ? btn.textContent : null;
+
   const { gdrive, ...exportable } = DB;
-  const b=new Blob([JSON.stringify({...exportable, gdrive:{connected:gdrive.connected,lastSync:gdrive.lastSync}},null,2)],{type:'application/json'});
-  const u=URL.createObjectURL(b);
-  const a=document.createElement('a'); a.href=u; a.download='saados-data.json'; a.click(); URL.revokeObjectURL(u);
+  const exportJson = {...exportable, gdrive:{connected:gdrive.connected,lastSync:gdrive.lastSync}};
+
+  // If Drive isn't connected, media can't be fetched — still export the JSON,
+  // but tell the user why there's no Images/Videos folder this time.
+  const canFetchMedia = !!gdriveToken;
+  if(!canFetchMedia) {
+    alert('Connect to Google Drive to include your photos and videos in the export. Exporting data only for now.');
+  }
+
+  if(btn) { btn.disabled = true; btn.textContent = '⬇ Preparing…'; }
+
+  try {
+    const zip = new JSZip();
+    zip.file('data.json', JSON.stringify(exportJson, null, 2));
+
+    if(canFetchMedia) {
+      const imgFolder = zip.folder('Images');
+      const vidFolder = zip.folder('Videos');
+      const days = exportJson.days || {};
+      const dateKeys = Object.keys(days);
+      let done = 0, total = 0;
+      for(const ds of dateKeys) {
+        const j = days[ds]?.journal;
+        if(j?.images?.length) total += j.images.length;
+        if(j?.videos?.length) total += j.videos.length;
+      }
+
+      for(const ds of dateKeys) {
+        const j = days[ds]?.journal;
+        if(!j) continue;
+
+        for(const img of (j.images || [])) {
+          if(btn) btn.textContent = `⬇ Downloading media… (${++done}/${total||1})`;
+          if(!img.driveId) continue;
+          const blob = await _driveGetBlob(img.driveId);
+          if(!blob) continue;
+          const safeName = (img.name || `${img.driveId}.jpg`).replace(/[\\/:*?"<>|]/g, '_');
+          imgFolder.file(`${ds}_${safeName}`, blob);
+        }
+
+        for(const vid of (j.videos || [])) {
+          if(btn) btn.textContent = `⬇ Downloading media… (${++done}/${total||1})`;
+          if(!vid.driveId) continue;
+          const blob = await _driveGetBlob(vid.driveId);
+          if(!blob) continue;
+          const safeName = (vid.name || `${vid.driveId}.mp4`).replace(/[\\/:*?"<>|]/g, '_');
+          vidFolder.file(`${ds}_${safeName}`, blob);
+        }
+      }
+    }
+
+    if(btn) btn.textContent = '⬇ Zipping…';
+    const zipBlob = await zip.generateAsync({type:'blob'});
+    const u = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = u; a.download = 'saados-export.zip'; a.click();
+    URL.revokeObjectURL(u);
+  } catch(e) {
+    alert('Export failed: ' + (e?.message || e));
+  } finally {
+    if(btn) { btn.disabled = false; btn.textContent = originalLabel; }
+  }
 }
 function importData() { document.getElementById('s-import').click(); }
 function doImport(e) {
