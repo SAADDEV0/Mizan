@@ -5344,6 +5344,7 @@ async function pushProfile() {
     _meta:{ version:3, app:'saados', savedAt:new Date().toISOString() },
     profile:DB.profile, practices:DB.practices, wird:DB.wird,
     onboarded:DB.onboarded, gdrive:{ lastSync:DB.gdrive.lastSync },
+    mal: DB.mal || { budget:0, months:{} },
   }, existingId);
 }
 
@@ -5439,6 +5440,7 @@ async function drivePull(silent=false) {
       if(p.onboarded!=null) DB.onboarded = p.onboarded;
       if(p.gdrive?.clientId) DB.gdrive.clientId = p.gdrive.clientId;
       if(p.gdrive?.lastSync) DB.gdrive.lastSync = p.gdrive.lastSync;
+      if(p.mal) DB.mal = p.mal;
     }
 
     // ── 4. Apply day data ─────────────────────────────────────────────────
@@ -5481,6 +5483,7 @@ async function migrateOldData() {
       DB.wird      = old.wird      || DB.wird;
       DB.days      = old.days      || DB.days;
       DB.onboarded = old.onboarded ?? DB.onboarded;
+      if(old.mal) DB.mal = old.mal;
       if(old.gdrive?.clientId) DB.gdrive.clientId = old.gdrive.clientId;
       if(old.gdrive?.lastSync) DB.gdrive.lastSync = old.gdrive.lastSync;
     }
@@ -6153,8 +6156,11 @@ function copyQuote() {
 /* ════════════════════════════════════════════════
    MĀL — MONEY TRACKER
 ════════════════════════════════════════════════ */
-function malMonthKey() {
-  const d = new Date();
+let malPeriod = 'month'; // 'day' | 'week' | 'month'
+let malSelectedDate = null; // YYYY-MM-DD; null = today
+
+function malMonthKey(dateStr) {
+  const d = dateStr ? new Date(dateStr+'T12:00:00') : new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 function getMalMonth(key) {
@@ -6167,25 +6173,97 @@ function malFmt(n) {
   return Number(n).toLocaleString('en-MA', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
+/* Returns all expenses across all months */
+function malAllExpenses() {
+  if(!DB.mal?.months) return [];
+  return Object.values(DB.mal.months).flatMap(m => m.expenses||[]);
+}
+
+/* Filter expenses for a period around a date string */
+function malExpensesForPeriod(period, dateStr) {
+  const all = malAllExpenses();
+  if(period === 'month') {
+    const mk = malMonthKey(dateStr);
+    return all.filter(e => e.date && e.date.startsWith(mk));
+  }
+  if(period === 'week') {
+    const anchor = new Date((dateStr||todayStr())+'T12:00:00');
+    const dow = (anchor.getDay()+6)%7; // 0=Mon
+    const start = new Date(anchor); start.setDate(start.getDate()-dow); start.setHours(0,0,0,0);
+    const end   = new Date(start);  end.setDate(end.getDate()+7);
+    return all.filter(e => { const d=new Date(e.date); return d>=start && d<end; });
+  }
+  if(period === 'day') {
+    const ds = dateStr||todayStr();
+    return all.filter(e => e.date && e.date.startsWith(ds));
+  }
+  return all;
+}
+
+function malPeriodLabel(period, dateStr) {
+  const ds = dateStr||todayStr();
+  if(period === 'day') {
+    const isToday = ds === todayStr();
+    if(isToday) return 'Today';
+    return new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  }
+  if(period === 'week') {
+    const anchor = new Date(ds+'T12:00:00');
+    const dow = (anchor.getDay()+6)%7;
+    const start = new Date(anchor); start.setDate(start.getDate()-dow);
+    const end   = new Date(start);  end.setDate(end.getDate()+6);
+    return `${start.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+  }
+  if(period === 'month') {
+    const d = dateStr ? new Date(dateStr+'T12:00:00') : new Date();
+    return d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  }
+  return '';
+}
+
+function malDateShift(delta) {
+  const anchor = new Date((malSelectedDate||todayStr())+'T12:00:00');
+  if(malPeriod==='day')   anchor.setDate(anchor.getDate()+delta);
+  if(malPeriod==='week')  anchor.setDate(anchor.getDate()+delta*7);
+  if(malPeriod==='month') anchor.setMonth(anchor.getMonth()+delta);
+  const next = anchor.toISOString().split('T')[0];
+  if(next > todayStr()) return;
+  malSelectedDate = next;
+  renderSection();
+}
+
+function setMalPeriod(p) { malPeriod=p; renderSection(); }
+
 function renderMal(el) {
   if(!DB.mal) DB.mal = { budget: 0, months: {} };
-  const mk = malMonthKey();
-  const month = getMalMonth(mk);
+  const ds = malSelectedDate||todayStr();
+  const expenses = malExpensesForPeriod(malPeriod, ds);
   const budget = DB.mal.budget || 0;
-  const expenses = month.expenses || [];
   const spent = expenses.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
   const left = budget - spent;
   const pct = budget > 0 ? Math.min(Math.round(spent/budget*100), 100) : 0;
   const barColor = pct >= 100 ? 'var(--rust)' : pct >= 80 ? 'var(--gold)' : 'var(--green)';
   const leftColor = left < 0 ? 'var(--rust)' : left < budget*0.2 ? 'var(--gold)' : 'var(--green)';
-
-  const now = new Date();
-  const monthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const periodLabel = malPeriodLabel(malPeriod, ds);
+  const isCurrentPeriod = ds === todayStr() || !malSelectedDate;
 
   let h = `<div class="s-head">
     <div class="s-kicker">Money</div>
     <div class="s-title">Māl <span class="s-title-ar">مال</span></div>
-    <div class="s-sub">${monthLabel}</div>
+    <div class="s-sub">${periodLabel}</div>
+  </div>`;
+
+  /* ── Period switcher ── */
+  h += `<div style="display:flex;gap:6px;margin-bottom:16px">
+    ${['day','week','month'].map(p=>`
+      <button onclick="setMalPeriod('${p}')" style="flex:1;padding:9px 6px;border:1.5px solid ${malPeriod===p?'var(--gold)':'var(--border)'};background:${malPeriod===p?'var(--gold-glow)':'var(--surface)'};border-radius:var(--radius-sm);font-family:var(--sans);font-size:12px;font-weight:${malPeriod===p?600:400};color:${malPeriod===p?'var(--gold)':'var(--text3)'};cursor:pointer;transition:all 0.2s">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join('')}
+  </div>`;
+
+  /* ── Date navigation ── */
+  h += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+    <button onclick="malDateShift(-1)" style="width:32px;height:32px;border:1.5px solid var(--border);background:var(--surface);border-radius:50%;color:var(--text3);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">‹</button>
+    <div style="flex:1;text-align:center;font-family:var(--serif);font-size:16px;color:var(--text2)">${esc(periodLabel)}</div>
+    <button onclick="malDateShift(1)" ${isCurrentPeriod?'disabled style="opacity:0.3;cursor:default"':'style="cursor:pointer"'} style="width:32px;height:32px;border:1.5px solid var(--border);background:var(--surface);border-radius:50%;color:var(--text3);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s" onmouseover="if(!this.disabled){this.style.borderColor='var(--gold)';this.style.color='var(--gold)'}" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">›</button>
   </div>`;
 
   /* ── Budget hero card ── */
@@ -6194,7 +6272,7 @@ function renderMal(el) {
       <div>
         <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:500;margin-bottom:6px">Monthly budget</div>
         <div style="display:flex;align-items:baseline;gap:6px">
-          <span style="font-family:var(--serif);font-size:48px;font-weight:300;line-height:1;color:var(--text)" id="mal-budget-display">${budget > 0 ? malFmt(budget) : '—'}</span>
+          <span style="font-family:var(--serif);font-size:48px;font-weight:300;line-height:1;color:var(--text)">${budget > 0 ? malFmt(budget) : '—'}</span>
           <span style="font-size:13px;color:var(--text3)">MAD</span>
         </div>
       </div>
@@ -6212,7 +6290,7 @@ function renderMal(el) {
       </div>
       <div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text4);margin-bottom:4px">Left</div>
-        <div style="font-family:var(--serif);font-size:22px;font-weight:400;color:${leftColor}">${malFmt(left)}</div>
+        <div style="font-family:var(--serif);font-size:22px;font-weight:400;color:${leftColor}">${malFmt(Math.abs(left))}${left<0?' over':''}</div>
       </div>
       <div>
         <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text4);margin-bottom:4px">Used</div>
@@ -6223,49 +6301,56 @@ function renderMal(el) {
 
   /* ── Expenses list ── */
   h += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px">
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text4);font-weight:500">${expenses.length} expense${expenses.length!==1?'s':''} this month</div>
-    ${expenses.length > 0 ? `<div style="font-size:11px;color:var(--text4)">${malFmt(spent)} MAD total</div>` : ''}
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text4);font-weight:500">${expenses.length} expense${expenses.length!==1?'s':''} · ${malPeriod}</div>
+    ${expenses.length > 0 ? `<div style="font-size:11px;color:var(--text4)">${malFmt(spent)} MAD</div>` : ''}
   </div>`;
 
   if(expenses.length === 0) {
     h += `<div style="background:var(--surface);border-radius:var(--radius);padding:32px;text-align:center;box-shadow:var(--shadow-sm)">
-      <div style="font-family:var(--serif);font-style:italic;font-size:16px;color:var(--text4);line-height:1.7">No expenses yet.<br>Tap ＋ to log your first spend.</div>
+      <div style="font-family:var(--serif);font-style:italic;font-size:16px;color:var(--text4);line-height:1.7">No expenses for this ${malPeriod}.<br>Tap ＋ to log a spend.</div>
     </div>`;
   } else {
+    // Sort newest first, and find which month key each expense belongs to
+    const sorted = [...expenses].sort((a,b) => new Date(b.date)-new Date(a.date));
     h += `<div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden">`;
-    [...expenses].reverse().forEach((exp, ri) => {
-      const i = expenses.length - 1 - ri;
+    sorted.forEach((exp) => {
+      // Find the month key and index for deletion
+      const expMk = malMonthKey(exp.date.split('T')[0]);
+      const monthObj = DB.mal.months?.[expMk];
+      const idx = monthObj?.expenses?.findIndex(e=>e.id===exp.id) ?? -1;
       const d = new Date(exp.date);
       const dateStr = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
-      const isLast = ri === expenses.length - 1;
-      h += `<div style="display:flex;align-items:center;gap:14px;padding:14px 18px;${isLast?'':'border-bottom:1px solid var(--border)'}">
+      h += `<div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--border);last-of-type:border-bottom:none">
         <div style="flex:1;min-width:0">
           <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px">${esc(exp.desc||'Expense')}</div>
           <div style="font-size:11px;color:var(--text4)">${dateStr}</div>
         </div>
         <div style="font-family:var(--serif);font-size:18px;font-weight:400;color:var(--text);white-space:nowrap">${malFmt(exp.amount)} <span style="font-size:11px;color:var(--text4)">MAD</span></div>
-        <button onclick="deleteMalExpense('${mk}', ${i})" style="background:none;border:none;color:var(--text4);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:4px;opacity:0.5;transition:all 0.15s" onmouseover="this.style.opacity='1';this.style.color='var(--rust)'" onmouseout="this.style.opacity='0.5';this.style.color='var(--text4)'">✕</button>
+        ${idx>=0?`<button onclick="deleteMalExpense('${expMk}',${idx})" style="background:none;border:none;color:var(--text4);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:4px;opacity:0.5;transition:all 0.15s" onmouseover="this.style.opacity='1';this.style.color='var(--rust)'" onmouseout="this.style.opacity='0.5';this.style.color='var(--text4)'">✕</button>`:''}
       </div>`;
     });
     h += `</div>`;
   }
 
-  /* ── Previous months ── */
-  const allMonths = Object.keys(DB.mal.months||{}).sort().reverse().filter(k => k !== mk);
-  if(allMonths.length) {
-    h += `<div style="margin-top:28px">
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text4);font-weight:500;margin-bottom:12px">Previous months</div>`;
-    allMonths.slice(0,3).forEach(key => {
-      const m = DB.mal.months[key];
-      const mSpent = (m.expenses||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
-      const [yr, mo] = key.split('-');
-      const mLabel = new Date(parseInt(yr), parseInt(mo)-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-      h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow-sm)">
-        <div style="font-size:13px;color:var(--text2)">${mLabel}</div>
-        <div style="font-family:var(--serif);font-size:16px;color:var(--text3)">${malFmt(mSpent)} MAD</div>
-      </div>`;
-    });
-    h += `</div>`;
+  /* ── Previous months summary (only shown in month view) ── */
+  if(malPeriod === 'month') {
+    const currentMk = malMonthKey(ds);
+    const allMonths = Object.keys(DB.mal.months||{}).sort().reverse().filter(k => k !== currentMk);
+    if(allMonths.length) {
+      h += `<div style="margin-top:28px">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text4);font-weight:500;margin-bottom:12px">Other months</div>`;
+      allMonths.slice(0,6).forEach(key => {
+        const m = DB.mal.months[key];
+        const mSpent = (m.expenses||[]).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+        const [yr, mo] = key.split('-');
+        const mLabel = new Date(parseInt(yr), parseInt(mo)-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+        h += `<div onclick="malSelectedDate='${key}-15';malPeriod='month';renderSection()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow-sm);cursor:pointer" onmouseover="this.style.borderLeft='3px solid var(--gold)'" onmouseout="this.style.borderLeft=''">
+          <div style="font-size:13px;color:var(--text2)">${mLabel}</div>
+          <div style="font-family:var(--serif);font-size:16px;color:var(--text3)">${malFmt(mSpent)} MAD</div>
+        </div>`;
+      });
+      h += `</div>`;
+    }
   }
 
   el.innerHTML = h;
@@ -6288,7 +6373,7 @@ function saveMalExpense() {
   const amt = parseFloat(document.getElementById('mal-amount').value);
   const desc = document.getElementById('mal-desc').value.trim();
   if(!amt || amt <= 0) { document.getElementById('mal-amount').focus(); return; }
-  const mk = malMonthKey();
+  const mk = malMonthKey(todayStr());
   const month = getMalMonth(mk);
   month.expenses.push({ id: genId(), amount: amt, desc: desc || 'Expense', date: new Date().toISOString() });
   markUnsaved();
