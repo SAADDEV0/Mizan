@@ -7143,6 +7143,58 @@ TASK BLOCK IDS: fajr, dhuhr, asr, maghrib, isha (the time block after that praye
 TODAY: ${todayStr()}`;
 }
 
+// ── Call OpenRouter with fallback models ──
+async function aiCallOpenRouter(systemPrompt, userMessage) {
+  const models = [
+    'google/gemma-3-27b-it:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'mistralai/mistral-7b-instruct:free',
+    'qwen/qwen3-8b:free',
+  ];
+
+  let lastError = null;
+  for (const model of models) {
+    try {
+      const res = await fetch(OPENROUTER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': window.location.href,
+          'X-Title': 'SaadOs',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userMessage  },
+          ],
+          temperature: 0.1,
+          max_tokens: 1000,
+        }),
+      });
+
+      const data = await res.json();
+
+      // Provider error — try next model
+      if (!res.ok || data?.error) {
+        lastError = data?.error?.message || `HTTP ${res.status}`;
+        continue;
+      }
+
+      const raw = data?.choices?.[0]?.message?.content || '';
+      if (!raw) { lastError = 'Empty response'; continue; }
+
+      return raw; // success
+    } catch (e) {
+      lastError = e.message;
+      continue;
+    }
+  }
+
+  throw new Error(lastError || 'All models failed — try again later');
+}
+
 // ── Main AI run function ──
 async function aiRun() {
   const input = document.getElementById('ai-input');
@@ -7163,38 +7215,7 @@ async function aiRun() {
   const userMessage = `Current app state:\n${JSON.stringify(context, null, 2)}\n\nUser command: "${text}"`;
 
   try {
-    const res = await fetch(OPENROUTER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': window.location.href,
-        'X-Title': 'SaadOs',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        messages: [
-          {
-            role: 'system',
-            content: aiBuildSystemPrompt(),
-          },
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 1000,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-    const raw = data?.choices?.[0]?.message?.content || '';
+    const raw = await aiCallOpenRouter(aiBuildSystemPrompt(), userMessage);
 
     // Strip any accidental markdown fences
     const clean = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
