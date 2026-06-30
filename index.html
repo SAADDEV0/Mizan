@@ -4712,37 +4712,38 @@ async function generateReadTopics() {
     const recentTitles = last30ReadTitles();
     const queueTitles = (DB.readQueue || []).map(t => t.title);
     const avoidTitles = [...recentTitles, ...queueTitles];
+    // Pick one category for this article so the model doesn't have to juggle several.
+    const category = catNames[Math.floor(Math.random() * catNames.length)] || catNames[0];
 
-    const prompt = `Generate 10 new short articles for a daily reading habit app. Categories to draw from: ${catNames.join(', ')}. Target length: ${depthInfo.words}. Do not repeat or closely resemble any of these already-used or queued titles: ${avoidTitles.length ? avoidTitles.join('; ') : '(none yet)'}. Return as a JSON array of objects, each with title, content, and category. Return ONLY the JSON array — no preamble, no markdown code fences.`;
+    const prompt = `Write one short article for a daily reading habit app, in the category "${category}". Target length: ${depthInfo.words}. Do not repeat or closely resemble any of these already-used or queued titles: ${avoidTitles.length ? avoidTitles.join('; ') : '(none yet)'}. Return ONLY a single JSON object with exactly these keys: title, content, category. No preamble, no markdown code fences, no extra text before or after the JSON.`;
 
     const raw = await aiCallGroq(
-      'You are a content generator for a daily-reading habit app. Always respond with a valid JSON array only, nothing else.',
-      prompt
+      'You are a content generator for a daily-reading habit app. Always respond with a single valid JSON object only, nothing else.',
+      prompt,
+      4000
     );
-    const clean = raw.replace(/```json|```/g, '').trim();
-    let arr;
+
+    // Strip code fences and grab the outermost {...} in case the model adds stray text.
+    let clean = raw.replace(/```json|```/gi, '').trim();
+    const first = clean.indexOf('{');
+    const last = clean.lastIndexOf('}');
+    if (first !== -1 && last !== -1 && last > first) {
+      clean = clean.slice(first, last + 1);
+    }
+
+    let item;
     try {
-      arr = JSON.parse(clean);
+      item = JSON.parse(clean);
     } catch (parseErr) {
       throw new Error('AI returned invalid format — try again');
     }
 
-    if (!Array.isArray(arr) || arr.length === 0) {
-      throw new Error('AI returned no articles — try again');
+    if (!item || !item.title || !item.content) {
+      throw new Error('AI returned an incomplete article — try again');
     }
 
-    let added = 0;
-    arr.forEach(item => {
-      if (item && item.title && item.content) {
-        const catId = allCats.find(c => c.en === item.category)?.id || enabledIds[0] || 'science';
-        DB.readQueue.push({ title: item.title, content: item.content, category: catId, depth: depthId });
-        added++;
-      }
-    });
-
-    if (added === 0) {
-      throw new Error('AI returned articles in an unexpected format — try again');
-    }
+    const catId = allCats.find(c => c.en === item.category)?.id || enabledIds[0] || 'science';
+    DB.readQueue.push({ title: item.title, content: item.content, category: catId, depth: depthId });
 
     markUnsaved();
     // If the read tab is open and still waiting on a topic, fill it in now.
@@ -4750,7 +4751,7 @@ async function generateReadTopics() {
       const ds = todayStr();
       if (!getDay(ds).readTopic && DB.readQueue.length > 0) renderSection();
     }
-    return { success: true, count: added, error: null };
+    return { success: true, count: 1, error: null };
   } catch (e) {
     console.warn('Read topic generation failed:', e.message);
     return { success: false, count: 0, error: e.message || 'Generation failed' };
@@ -7847,7 +7848,7 @@ CURRENT TIME: ${new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'
 }
 
 // ── Call Groq with fallback models ──
-async function aiCallGroq(systemPrompt, userMessage) {
+async function aiCallGroq(systemPrompt, userMessage, maxTokens = 1000) {
   const models = [
     'llama-3.3-70b-versatile',
     'llama3-70b-8192',
@@ -7870,7 +7871,7 @@ async function aiCallGroq(systemPrompt, userMessage) {
             { role: 'user',   content: userMessage  },
           ],
           temperature: 0.1,
-          max_tokens: 1000,
+          max_tokens: maxTokens,
         }),
       });
 
